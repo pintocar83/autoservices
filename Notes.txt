@@ -1,0 +1,48 @@
+-Devices List
+npx react-native run-android --list-devices
+
+-Clean Build Android
+cd android
+gradlew clean
+
+-Build APK Release (https://medium.com/geekculture/react-native-generate-apk-debug-and-release-apk-4e9981a2ea51)
+keytool -genkey -v -keystore autoservices.keystore -alias AutoServices -keyalg RSA -keysize 2048 -validity 10000
+
+cd android
+gradlew assembleRelease
+
+android\app\build\outputs\apk\release\app-release.apk
+
+
+
+
+
+
+Correcion y Cambios Pendientes
+==============================
+
+Automobiles - Screen
+====================
+[ ] Uppercase TextInput Number
+
+
+Service Type - Screen
+=====================
+[ ] Number KeyBoard para el campo kilometers
+[ ] Number KeyBoard para el campo days
+
+
+Services - Screen
+=================
+[ ] Precargar default automovil al cargar
+[X] En la lista no se muestra la descricion cuando el texto es muy largo
+[ ] En Time (previous) reflejar Year cuando supere los 12 meses
+
+
+
+
+
+Otros
+=====
+[ ] Respaldar / Restaurar BD
+[ ] Buscar otra alternativa para el calendario (muy lento)

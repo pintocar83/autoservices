@@ -14,6 +14,10 @@ export const Service = {
   formatKm: (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
   formatTimePeriod: (months, days) => {
     let v=[];
+    if(months>12){
+      v.push((months/12).toFixed(0)+" years");
+      months%=12;
+    }
     if(months>0)
       v.push(months+" months");
     if(days>0)
@@ -103,12 +107,13 @@ export const Service = {
         <List.Item
           key={row.id}
           title={moment(row.service_date).format('DD/MM/YYYY hh:mma') + " - " + row.service_type_name}
-          description={
-            <View style={{flexDirection: 'column', flexWrap: 'wrap', width: '100%'}}>
+          description=<Text>{me.formatKm(row.km) + " km" + (row.km_diff > 0 ? " ~ " + me.formatKm(row.km_diff) + " km" : "")+(time_periodo ? " / " + time_periodo : "")}{row.details && <Text style={{fontSize: 12, paddingLeft: 10}}> - {row.details}.</Text>}</Text>
+          /*description={
+            <View style={{flexDirection: 'column', overflow: 'hidden'}}>
               <Text style={{color: color}}>{me.formatKm(row.km) + " km" + (row.km_diff > 0 ? " ~ " + me.formatKm(row.km_diff) + " km" : "")+(time_periodo ? " / " + time_periodo : "")}</Text>
               <Text style={{flex: 1, fontSize: 12, color: color}}>{row.details}</Text>
             </View>
-          }
+          }*/
           onPress={() => setSelection(row.id)}
           left={() => <List.Icon icon={icon} color={color} style={{marginLeft: 8}}/>}
           titleStyle={{color: color}}
@@ -149,9 +154,9 @@ export const Service = {
     const [time, setTime] = React.useState(params && params.service_date ? moment(params.service_date,"YYYY-MM-DD HH:mm:ss").format("hh:mm a") : moment().format("hh:mm a"));
     const [serviceType, setServiceType] = React.useState({id: params?.service_type_id, name: params?.service_type_name});
     const [servicePrevious, setServicePrevious] = React.useState({id: '', km: '', service_date: ''});
-    const [kmCurrent, setKmCurrent] = React.useState(params?.km ? String(params?.km) : '');
-    const [kmPrevious, setKmPrevious] = React.useState(params?.km_previous ? String(params?.km_previous) : '');
-    const [kmDiff, setKmDiff] = React.useState(params?.km_diff ? String(params?.km_diff) : '');
+    const [kmCurrent, setKmCurrent] = React.useState(params?.km ? params?.km : '');
+    const [kmPrevious, setKmPrevious] = React.useState(params?.km_previous ? params?.km_previous : '');
+    const [kmDiff, setKmDiff] = React.useState(params?.km_diff ? params?.km_diff : '');
     const [details, setDetails] = React.useState(params?.details ? params?.details : '');
     const [timePrevious, setTimePrevious] = React.useState({months: params?.time_months, days: params?.days});
     const [automobile, setAutomobile] = React.useState({id: params?.automobile_id, name: params?.automobile_name});
@@ -171,6 +176,9 @@ export const Service = {
 
 
     const findKilometerServiceType = () => {
+      if(!automobile?.id)
+        return;
+
       if(!date.trim())
         return;
 
@@ -185,8 +193,8 @@ export const Service = {
       console.log("findKilometerServiceType");
 
       db.transaction(tx => {
-        let query = "SELECT * FROM services WHERE service_type_id = ? AND service_date < ? AND id <> ? ORDER BY service_date DESC LIMIT 1";
-        let values = [serviceType?.id, service_date, id];
+        let query = "SELECT * FROM services WHERE automobile_id=? AND service_type_id = ? AND service_date < ? AND id <> ? ORDER BY service_date DESC LIMIT 1";
+        let values = [automobile?.id, serviceType?.id, service_date, id];
         console.log("QUERY: "+query, values);
         tx.executeSql(query, values , (txObj, result) => {
           console.log("RESULT: ", result);
@@ -198,8 +206,8 @@ export const Service = {
               km: previous_service[0].km,
               service_date: previous_service[0].service_date
             });
-            setKmPrevious(String(previous_service[0].km));
-            setKmDiff(String(kmCurrent-kmPrevious));
+            setKmPrevious(previous_service[0].km);
+            setKmDiff(kmCurrent-kmPrevious);
 
             //updateTimePrevious();
             setDisplayKmPrevious(true);
@@ -284,7 +292,6 @@ export const Service = {
         days: days
       });
     };
-    
 
     const onDismissDatePicker = React.useCallback(() => {
       setDisplayDatePicker(false);
@@ -340,7 +347,7 @@ export const Service = {
         return;
       }
 
-      if(!kmCurrent.trim()){
+      if(!String(kmCurrent).trim()){
         setKmCurrentEmpty(true);
         return;
       }
@@ -372,9 +379,12 @@ export const Service = {
 
 
         //delete old kilometer insert kilometers
-        query = "DELETE FROM kilometers WHERE register_date=?";
-        values = [service_date];
-        tx.executeSql(query, values, (txObj, result) => {});
+        if(params?.service_date){
+          query = "DELETE FROM kilometers WHERE automobile_id=? AND register_date=?";
+          values = [automobile?.id, params.service_date];
+          console.log("QUERY: "+ query,values)
+          tx.executeSql(query, values, (txObj, result) => {});
+        }
 
         query = "INSERT INTO kilometers(automobile_id, register_date, value) VALUES(?,?,?)";
         values = [automobile?.id, service_date, kmCurrent];
@@ -391,27 +401,19 @@ export const Service = {
     }
 
     const onListServiceType = () => {
-      //navigation.navigate('ServiceType.List', {onAccept: (record) => onAcceptListServiceType(record)});
+      if(!automobile?.id)
+        return;
       navigation.navigate('ServiceType.List', {screen: 'Service.Form'});
     }
 
     const onChangeKilometers = (value) => {
       value = value.replace(/[^0-9]/g, '');
       setKmCurrent(value); 
-      setKmCurrentEmpty(!value ? true : false);
+      setKmCurrentEmpty(!value || value <=0 ? true : false);
       if(displayKmPrevious){
         setKmDiff(value-kmPrevious);
       }
     }
-
-    const timePreviousFormat = () => {
-      let v=[];
-      if(timePrevious?.months)
-        v.push(timePrevious?.months+" months");
-      if(timePrevious?.days)
-        v.push(timePrevious?.days+" days");
-      return v.join(" / ");
-    };
 
     const onListAutomobile = () => {
       navigation.navigate('Automobile.List', {screen: 'Service.Form'});
@@ -526,7 +528,7 @@ export const Service = {
 
         {displayKmPrevious && <TextInput
           label="Time (previous)"
-          value={timePreviousFormat()}
+          value={me.formatTimePeriod(timePrevious?.months, timePrevious?.days)}
           editable={false}
           style={uiStyle.defaultWidth}
         />}
