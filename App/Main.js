@@ -90,7 +90,7 @@ export default function Main() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Kilometer.Index"
+        initialRouteName="Service.Index"
         screenOptions={{
           header: (props) => <NavigationBar {...props} />,
         }}

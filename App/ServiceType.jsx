@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Button, SafeAreaView, StyleSheet, Alert } from 'react-native';
+import { View, Text, Button, ScrollView, StyleSheet, Alert } from 'react-native';
 import { DataTable, Divider, TextInput, RadioButton, Switch, HelperText, List, Appbar, FAB, useTheme, IconButton, MD3Colors } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -47,10 +47,11 @@ export const ServiceType = {
 
     const onAccept = () => {
       if(!selection) return;
+      if(!params?.screen) return;
       const record = data.find(element => element.id == selection);
 
       navigation.navigate({
-        name: 'Service.Form',
+        name: params?.screen,
         params: {serviceType: record},
         merge: true
       });
@@ -212,12 +213,12 @@ export const ServiceType = {
   Form: ({ route, navigation }) => {
     const params = route.params;
     const id = params && params.id ? params.id : "";
-    const [name, setName] = React.useState(params && params.name ? params.name : "");
-    const [alertKm, setAlertKm] = React.useState(params && params.alert_km ? params.alert_km : "");
-    const [alertTime, setAlertTime] = React.useState(params && params.alert_time ? params.alert_time : "");
-    const [alertTimeType, setAlertTimeType] = React.useState(params && params.alert_time_type ? params.alert_time_type : "D");
-    const [isSwitchOnAlertKm, setIsSwitchOnAlertKm] = React.useState(params && params.alert_km > 0 ? true : false);
-    const [isSwitchOnAlertTime, setIsSwitchOnAlertTime] = React.useState(params && params.alert_time > 0 ? true : false);
+    const [name, setName] = React.useState(params && params?.name ? params.name : "");
+    const [alertKm, setAlertKm] = React.useState(params && params?.alert_km ? String(params.alert_km) : "");
+    const [alertTime, setAlertTime] = React.useState(params && params?.alert_time ? String(params.alert_time) : "");
+    const [alertTimeType, setAlertTimeType] = React.useState(params && params?.alert_time_type ? params.alert_time_type : "D");
+    const [isSwitchOnAlertKm, setIsSwitchOnAlertKm] = React.useState(params && params?.alert_km > 0 ? true : false);
+    const [isSwitchOnAlertTime, setIsSwitchOnAlertTime] = React.useState(params && params?.alert_time > 0 ? true : false);
     const [nameEmpty, setNameEmpty] = React.useState(false);
 
     let labelAlertTime="Time";
@@ -252,7 +253,7 @@ export const ServiceType = {
     }
 
     return (
-      <SafeAreaView style={uiStyle.container}>
+      <ScrollView style={uiStyle.scrollView}>
         <Text style={uiStyle.indexHeader}>Service Types</Text>
         <TextInput
           label="Name"
@@ -319,7 +320,7 @@ export const ServiceType = {
             onPress={onSave}
           />
         </View>
-      </SafeAreaView>
+      </ScrollView>
     );
   }
 }

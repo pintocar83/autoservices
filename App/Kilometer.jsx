@@ -1,6 +1,6 @@
 import React from 'react';
 import moment from 'moment';
-import { View, Text, Button, SafeAreaView, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, Button, ScrollView, StyleSheet, Alert } from 'react-native';
 import { DataTable, Divider, TextInput, RadioButton, Switch, HelperText, List, Appbar, FAB, useTheme, IconButton, MD3Colors } from 'react-native-paper';
 import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -88,7 +88,7 @@ export const Kilometer = {
               <Text>{moment(row.register_date).format('DD/MM/YYYY hh:mma')}</Text>
             </View>
           }
-          description={row.automobile_name + "  [" + row.automobile_code + "]"}
+          description={row.automobile_name}
           onPress={() => setSelection(row.id)}
           left={() => <List.Icon icon={icon} color={color} style={{marginLeft: 8}}/>}
           titleStyle={{color: color}}

@@ -1,6 +1,6 @@
 import React from 'react';
 import moment from 'moment';
-import { View, Text, Button, SafeAreaView, StyleSheet, Alert } from 'react-native';
+import { View, Text, Button, ScrollView, StyleSheet, Alert } from 'react-native';
 import { DataTable, Divider, TextInput, RadioButton, Switch, HelperText, List, Appbar, FAB, useTheme, IconButton, MD3Colors } from 'react-native-paper';
 import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -39,7 +39,18 @@ export const Service = {
       setSelection("");
       console.log("onRefresh");
       db.transaction(tx => {
-        let query = "SELECT S.*, ST.name service_type_name FROM services S INNER JOIN service_types ST ON S.service_type_id=ST.id ORDER BY S.service_date DESC";
+        let query = `
+          SELECT
+            S.*,
+            ST.name service_type_name,
+            A.code automobile_code,
+            A.name automobile_name
+          FROM
+            services S
+              INNER JOIN service_types ST ON S.service_type_id = ST.id
+              INNER JOIN automobiles A    ON S.automobile_id = A.id
+          ORDER BY 
+            S.service_date DESC`;
         console.log("QUERY: "+query);
         tx.executeSql(query, null, (txObj, result) => {
           console.log("RESULT: ", result);
@@ -91,13 +102,18 @@ export const Service = {
       return (
         <List.Item
           key={row.id}
-          title={<View style={{flexDirection: 'row', flexWrap: 'wrap', width: '100%'}}><Text>{moment(row.service_date).format('DD/MM/YYYY hh:mma')}</Text><Text style={{flex: 1, textAlign: 'right', fontSize: 12, fontWeight: 'bold'}}>{row.service_type_name}</Text></View>}
-          description={<View style={{flexDirection: 'column', flexWrap: 'wrap', width: '100%'}}><Text>{me.formatKm(row.km) + " km" + (row.km_diff > 0 ? " ~ " + me.formatKm(row.km_diff) + " km" : "")+(time_periodo ? " / " + time_periodo : "")}</Text><Text style={{flex: 1, fontSize: 12}}>{row.details}</Text></View>}
+          title={moment(row.service_date).format('DD/MM/YYYY hh:mma') + " - " + row.service_type_name}
+          description={
+            <View style={{flexDirection: 'column', flexWrap: 'wrap', width: '100%'}}>
+              <Text style={{color: color}}>{me.formatKm(row.km) + " km" + (row.km_diff > 0 ? " ~ " + me.formatKm(row.km_diff) + " km" : "")+(time_periodo ? " / " + time_periodo : "")}</Text>
+              <Text style={{flex: 1, fontSize: 12, color: color}}>{row.details}</Text>
+            </View>
+          }
           onPress={() => setSelection(row.id)}
           left={() => <List.Icon icon={icon} color={color} style={{marginLeft: 8}}/>}
           titleStyle={{color: color}}
           descriptionStyle={{color: color}}
-          style={{backgroundColor: backgroundColor}}
+          style={{backgroundColor: backgroundColor, width: '100%', flex: 1}}
         />
       );
     });
@@ -113,9 +129,11 @@ export const Service = {
           disabledDelete={!selection}
           />
         {me.header}
-        <List.Section style={uiStyle.defaultWidth}>
-          {ListItems}
-        </List.Section>
+        <ScrollView style={{...uiStyle.scrollView, width: '100%'}}>
+          <List.Section style={uiStyle.defaultWidth}>
+            {ListItems}
+          </List.Section>
+        </ScrollView>
         {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
         {visibleMsgBox && <MsgBox visible={visibleMsgBox} setVisible={setVisibleMsgBox} title="Delete" message="Do you want to do it?" onDone={onDeleteDone} />}
       </View>
@@ -129,13 +147,14 @@ export const Service = {
     const id = params && params.id ? params.id : "";
     const [date, setDate] = React.useState(params && params.service_date ? moment(params.service_date,"YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY") : moment().format("DD/MM/YYYY"));
     const [time, setTime] = React.useState(params && params.service_date ? moment(params.service_date,"YYYY-MM-DD HH:mm:ss").format("hh:mm a") : moment().format("hh:mm a"));
-    const [serviceType, setServiceType] = React.useState({id: '', name: ''});
+    const [serviceType, setServiceType] = React.useState({id: params?.service_type_id, name: params?.service_type_name});
     const [servicePrevious, setServicePrevious] = React.useState({id: '', km: '', service_date: ''});
-    const [kmCurrent, setKmCurrent] = React.useState(params?.kmCurrent ? params?.kmCurrent : '');
-    const [kmPrevious, setKmPrevious] = React.useState(params?.Previous ? params?.Previous : '');
-    const [kmDiff, setKmDiff] = React.useState(params?.kmDiff ? params?.kmDiff : '');
+    const [kmCurrent, setKmCurrent] = React.useState(params?.km ? String(params?.km) : '');
+    const [kmPrevious, setKmPrevious] = React.useState(params?.km_previous ? String(params?.km_previous) : '');
+    const [kmDiff, setKmDiff] = React.useState(params?.km_diff ? String(params?.km_diff) : '');
     const [details, setDetails] = React.useState(params?.details ? params?.details : '');
-    const [timePrevious, setTimePrevious] = React.useState({months: '', days: ''});
+    const [timePrevious, setTimePrevious] = React.useState({months: params?.time_months, days: params?.days});
+    const [automobile, setAutomobile] = React.useState({id: params?.automobile_id, name: params?.automobile_name});
     //const [serviceType, setServiceType] = React.useState({id: params?.serviceType?.id, name: params?.serviceType?.name});
     //const serviceType = useNavigationState(state => state.routes.serviceType);
 
@@ -144,6 +163,7 @@ export const Service = {
     const [dateEmpty, setDateEmpty] = React.useState(false);
     const [serviceTypeEmpty, setServiceTypeEmpty] = React.useState(false);
     const [kmCurrentEmpty, setKmCurrentEmpty] = React.useState(false);
+    const [automobileEmpty, setAutomobileEmpty] = React.useState(false);
 
     const [displayDatePicker, setDisplayDatePicker] = React.useState(false);
     const [displayTimePicker, setDisplayTimePicker] = React.useState(false);
@@ -165,20 +185,21 @@ export const Service = {
       console.log("findKilometerServiceType");
 
       db.transaction(tx => {
-        let query = "SELECT * FROM services WHERE service_type_id = ? AND service_date < ? ORDER BY service_date DESC LIMIT 1";
-        console.log("QUERY: "+query);
-        tx.executeSql(query, [serviceType?.id, service_date], (txObj, result) => {
+        let query = "SELECT * FROM services WHERE service_type_id = ? AND service_date < ? AND id <> ? ORDER BY service_date DESC LIMIT 1";
+        let values = [serviceType?.id, service_date, id];
+        console.log("QUERY: "+query, values);
+        tx.executeSql(query, values , (txObj, result) => {
           console.log("RESULT: ", result);
           let previous_service = dbResultData(result);
-
+          console.log("previous_service",previous_service);
           if(previous_service.length > 0){
             setServicePrevious({
               id: previous_service[0].id,
               km: previous_service[0].km,
               service_date: previous_service[0].service_date
             });
-            setKmPrevious(previous_service[0].km);
-            setKmDiff(kmCurrent-kmPrevious);
+            setKmPrevious(String(previous_service[0].km));
+            setKmDiff(String(kmCurrent-kmPrevious));
 
             //updateTimePrevious();
             setDisplayKmPrevious(true);
@@ -188,12 +209,16 @@ export const Service = {
       });
     };
 
-    
 
-    
-
-    
-
+    React.useEffect(() => {
+      if(route.params?.automobile) {
+        setAutomobile({
+          id: route.params?.automobile.id,
+          name: route.params?.automobile.name
+        });
+        setAutomobileEmpty(false);
+      }
+    },[route.params?.automobile]);
 
 
     React.useEffect(() => {
@@ -290,6 +315,11 @@ export const Service = {
     const onSave = () => {
       console.log("onSave");
 
+      if(!automobile?.id){
+        setAutomobileEmpty(true);
+        return;
+      }
+
       if(!date.trim()){
         setDateEmpty(true);
         return;
@@ -329,12 +359,12 @@ export const Service = {
           service_date+=" 00:00:00";
 
         if(id){
-          query="UPDATE services SET service_type_id=?, service_date=?, km=?, km_previous=?, km_diff=?, time_months=?, time_days=?, details=? WHERE id=?";
-          values=[serviceType?.id, service_date, kmCurrent, kmPrevious, kmDiff, timePrevious?.months, timePrevious?.days, details, id];
+          query="UPDATE services SET automobile_id=?, service_type_id=?, service_date=?, km=?, km_previous=?, km_diff=?, time_months=?, time_days=?, details=? WHERE id=?";
+          values=[automobile?.id, serviceType?.id, service_date, kmCurrent, kmPrevious, kmDiff, timePrevious?.months, timePrevious?.days, details, id];
         }
         else{
-          query="INSERT INTO services(service_type_id, service_date, km, km_previous, km_diff, time_months, time_days, details) VALUES(?,?,?,?,?,?,?,?)";
-          values=[serviceType?.id, service_date, kmCurrent, kmPrevious, kmDiff, timePrevious?.months, timePrevious?.days, details];
+          query="INSERT INTO services(automobile_id, service_type_id, service_date, km, km_previous, km_diff, time_months, time_days, details) VALUES(?,?,?,?,?,?,?,?,?)";
+          values=[automobile?.id, serviceType?.id, service_date, kmCurrent, kmPrevious, kmDiff, timePrevious?.months, timePrevious?.days, details];
         }
         console.log("QUERY",query,values);
 
@@ -346,8 +376,8 @@ export const Service = {
         values = [service_date];
         tx.executeSql(query, values, (txObj, result) => {});
 
-        query = "INSERT INTO kilometers(register_date, value) VALUES(?,?)";
-        values = [service_date, kmCurrent];
+        query = "INSERT INTO kilometers(automobile_id, register_date, value) VALUES(?,?,?)";
+        values = [automobile?.id, service_date, kmCurrent];
         tx.executeSql(query, values, (txObj, result) => {});
 
         navigation.navigate('Service.Index');
@@ -362,10 +392,11 @@ export const Service = {
 
     const onListServiceType = () => {
       //navigation.navigate('ServiceType.List', {onAccept: (record) => onAcceptListServiceType(record)});
-      navigation.navigate('ServiceType.List');
+      navigation.navigate('ServiceType.List', {screen: 'Service.Form'});
     }
 
     const onChangeKilometers = (value) => {
+      value = value.replace(/[^0-9]/g, '');
       setKmCurrent(value); 
       setKmCurrentEmpty(!value ? true : false);
       if(displayKmPrevious){
@@ -382,9 +413,28 @@ export const Service = {
       return v.join(" / ");
     };
 
+    const onListAutomobile = () => {
+      navigation.navigate('Automobile.List', {screen: 'Service.Form'});
+    }
+
     return (
-      <SafeAreaView style={uiStyle.container}>
+      <ScrollView style={uiStyle.scrollView}>
         {me.header}
+
+        <TextInput
+          label="Automobile"
+          value={automobile?.name}
+          error={automobileEmpty}
+          editable={false}
+          style={uiStyle.defaultWidth}
+          right={<TextInput.Icon
+            icon="magnify"
+            onPress={() => onListAutomobile()}
+          />}
+        />
+        {automobileEmpty && <HelperText type="error" style={uiStyle.defaultWidth}>
+          Field required!
+        </HelperText>}
 
         <TextInput
           label="Date"
@@ -450,10 +500,11 @@ export const Service = {
 
         <TextInput
           label="Kilometers"
-          value={kmCurrent}
+          value={String(kmCurrent)}
           error={kmCurrentEmpty}
           style={uiStyle.defaultWidth}
           onChangeText={onChangeKilometers}
+          keyboardType='numeric'
         />
         {kmCurrentEmpty && <HelperText type="error" style={uiStyle.defaultWidth}>
           Field required!
@@ -461,14 +512,14 @@ export const Service = {
 
         {displayKmPrevious && <TextInput
           label="Kilometers (previous)"
-          value={kmPrevious}
+          value={String(kmPrevious)}
           editable={false}
           style={uiStyle.defaultWidth}
         />}
 
         {displayKmPrevious && <TextInput
           label="Kilometers (tracked)"
-          value={kmDiff}
+          value={String(kmDiff)}
           editable={false}
           style={uiStyle.defaultWidth}
         />}
@@ -507,7 +558,7 @@ export const Service = {
             onPress={onSave}
           />
         </View>
-      </SafeAreaView>
+      </ScrollView>
     );
   }
 }

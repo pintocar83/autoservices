@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Button, SafeAreaView, StyleSheet, Alert } from 'react-native';
+import { View, Text, Button, ScrollView, StyleSheet, Alert } from 'react-native';
 import { DataTable, Divider, TextInput, HelperText, List, Appbar, FAB, useTheme, IconButton, MD3Colors } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -271,7 +271,7 @@ export const Automobile = {
     }
 
     return (
-      <SafeAreaView style={uiStyle.container}>
+      <ScrollView style={uiStyle.scrollView}>
         <Text style={uiStyle.indexHeader}>Automobiles</Text>
         <TextInput
           label="Number"
@@ -307,7 +307,7 @@ export const Automobile = {
             onPress={onSave}
           />
         </View>
-      </SafeAreaView>
+      </ScrollView>
     );
   }
 }
