@@ -14,6 +14,7 @@ import { Kilometer } from './Kilometer';
 import { Automobile } from './Automobile';
 import { ServiceType } from './ServiceType';
 import { Service } from './Service';
+import { Status } from './Status';
 
 
 
@@ -90,7 +91,7 @@ export default function Main() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Service.Index"
+        initialRouteName="Status.Index"
         screenOptions={{
           header: (props) => <NavigationBar {...props} />,
         }}
@@ -106,6 +107,7 @@ export default function Main() {
         <Stack.Screen name="ServiceType.Form" component={ServiceType.Form} />
         <Stack.Screen name="Service.Index" component={Service.Index} />
         <Stack.Screen name="Service.Form" component={Service.Form} />
+        <Stack.Screen name="Status.Index" component={Status.Index} />
         <Stack.Screen name="Details" component={DetailsScreen} />
       </Stack.Navigator>
     </NavigationContainer>

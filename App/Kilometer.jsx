@@ -223,7 +223,8 @@ export const Kilometer = {
 
         tx.executeSql(query, values, (txObj, result) => {});
 
-        navigation.navigate('Kilometer.Index');
+        //navigation.navigate('Kilometer.Index');
+        navigation.goBack();
       });
     }
 
@@ -313,7 +314,7 @@ export const Kilometer = {
             title="Cancel"
             style={uiStyle.buttonActionForm}
             contentStyle={uiStyle.buttonActionForm}
-            onPress={() => navigation.navigate('Kilometer.Index')}
+            onPress={() => navigation.goBack()}
           />
           <View style={{width: 20}} />
           <Button

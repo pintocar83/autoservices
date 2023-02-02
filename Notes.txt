@@ -36,7 +36,7 @@ Services - Screen
 =================
 [ ] Precargar default automovil al cargar
 [X] En la lista no se muestra la descricion cuando el texto es muy largo
-[ ] En Time (previous) reflejar Year cuando supere los 12 meses
+[X] En Time (previous) reflejar Year cuando supere los 12 meses
 
 
 

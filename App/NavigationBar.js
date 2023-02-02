@@ -29,7 +29,8 @@ export default function NavigationBar({ navigation, back }) {
           <Menu.Item onPress={() => {closeMenu(); navigation.navigate('ServiceType.Index')}} title="Service Types" />
           <Menu.Item onPress={() => {closeMenu(); navigation.navigate('Kilometer.Index')}} title="Kilometers Traveled" />
           <Menu.Item onPress={() => {closeMenu(); navigation.navigate('Service.Index')}} title="Services" />
-          <Menu.Item onPress={() => {closeMenu(); dbDelete()}} title="Database Restart" />
+          <Menu.Item onPress={() => {closeMenu(); navigation.navigate('Status.Index')}} title="Services Status" />
+          { false && <Menu.Item onPress={() => {closeMenu(); dbDelete()}} title="Database Restart" /> }
         </Menu>
       ) : null}
     </Appbar.Header>

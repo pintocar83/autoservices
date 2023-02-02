@@ -390,7 +390,8 @@ export const Service = {
         values = [automobile?.id, service_date, kmCurrent];
         tx.executeSql(query, values, (txObj, result) => {});
 
-        navigation.navigate('Service.Index');
+        //navigation.navigate('Service.Index');
+        navigation.goBack();
       });
     }
 
@@ -548,7 +549,7 @@ export const Service = {
             title="Cancel"
             style={uiStyle.buttonActionForm}
             contentStyle={uiStyle.buttonActionForm}
-            onPress={() => navigation.navigate('Service.Index')}
+            onPress={() => navigation.goBack()}
           />
           <View style={{width: 20}} />
           <Button

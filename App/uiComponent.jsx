@@ -53,6 +53,7 @@ export const ActionBar = (props) => {
       <View style={{ flex: 1 }} />
       { props.onAdd && <AddButton onPress={props.onAdd} /> }
       { props.onAccept && <AcceptButton onPress={props.onAccept} /> }
+      { props.append }
     </Appbar>
   );
 }

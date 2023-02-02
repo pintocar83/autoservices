@@ -33,7 +33,10 @@ export const dbDelete = () => {
   console.log("DELETE DATABASE");
   db.transaction(tx => {
     //tx.executeSql("TRUNCATE service_types");
+    tx.executeSql("DROP TABLE automobiles");
     tx.executeSql("DROP TABLE service_types");
+    tx.executeSql("DROP TABLE kilometers");
+    tx.executeSql("DROP TABLE services");
     //tx.executeSql("VACUUM");
     //tx.executeSql("PRAGMA integrity_check");
 
