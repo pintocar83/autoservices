@@ -10,7 +10,7 @@ import { ActionBar, AddButton, MsgBox, uiStyle }  from './uiComponent';
 
 
 export const Status = {
-  header: <Text style={uiStyle.indexHeader}>Services Status</Text>,
+  header: <Text style={uiStyle.indexHeader}>Status</Text>,
   formatKm: (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
   formatTimePeriod: (months, days) => {
     let v=[];
@@ -28,11 +28,14 @@ export const Status = {
   Index: ({ route, navigation }) => {
     const me = Status;
     const params = route.params;
-    const [data, setData] = React.useState(null);
+    const [data, setData] = React.useState([]);
     const [selection, setSelection] = React.useState("");
     const [visibleMsgBox, setVisibleMsgBox] = React.useState(false);
 
-    const [automobile, setAutomobile] = React.useState({id: params?.automobile.id, name: params?.automobile.name});
+    const [automobile, setAutomobile] = React.useState({
+      id:   params?.automobile.id ? params?.automobile.id   : params?.automobile_id,
+      name: params?.automobile.id ? params?.automobile.name : params?.automobile_name
+    });
     const [automobileEmpty, setAutomobileEmpty] = React.useState(false);
 
     const [km, setKm] = React.useState({id: '', date: '', value: ''});
@@ -45,6 +48,10 @@ export const Status = {
       });
     }, [navigation]);
     console.log("selection", selection);
+
+    //React.useEffect(() => {
+    //  onRefresh();
+    //},[data]);
 
     React.useEffect(() => {
       if(route.params?.automobile) {
@@ -98,7 +105,7 @@ export const Status = {
             //Service Type - DD/XX/XXXX
             //260.000 km ~ 4.000 km / 10 months / 5 days
             
-            let tmp_data = [];
+            
             //let query = "select S.id, ST.name service_type_name, max(S.service_date) date, S.km FROM services S INNER JOIN service_types ST ON S.service_type_id=ST.id GROUP BY S.service_type_id";
             let query = `
               SELECT
@@ -116,17 +123,21 @@ export const Status = {
                 S.service_type_id`;
             tx.executeSql(query, null, (txObj, result) => {
               let tmp = dbResultData(result);
-
+              //console.log("QUERY: ", query);
+              //console.log("RESULT TMP: ",tmp);
+              var tmp_data = [];
               for(let i=0;i<tmp.length;i++){
 
-                let km_diff = last_km[i].value - tmp[i].km;
 
-                let tmp_service_date = moment(last_km[i].register_date, "YYYY-MM-DD HH:mm:ss");
+                let km_diff = last_km[0].value - tmp[i].km;
+
+                let tmp_service_date = moment(last_km[0].register_date, "YYYY-MM-DD HH:mm:ss");
                 let tmp_service_date_previous = moment(tmp[i].date, "YYYY-MM-DD HH:mm:ss");
 
                 let months = tmp_service_date.diff(tmp_service_date_previous, 'months');
                 tmp_service_date_previous.add(months, 'months');
                 let days = tmp_service_date.diff(tmp_service_date_previous, 'days');
+
 
                 tmp_data.push({
                   id: tmp[i].id,
@@ -140,10 +151,9 @@ export const Status = {
                   alert_time: tmp[i].alert_time,
                   alert_time_type: tmp[i].alert_time_type
                 });
-
               }
 
-              console.log("XXXXXXX",tmp_data);
+              //console.log("XXXXXXX ",tmp_data);
               setData(tmp_data);
             });
 
@@ -158,31 +168,8 @@ export const Status = {
       });
     }
 
-    const onRefreshOld = () => {
-      setSelection("");
-      console.log("onRefresh");
-      db.transaction(tx => {
-        let query = `
-          SELECT
-            S.*,
-            ST.name service_type_name,
-            A.code automobile_code,
-            A.name automobile_name
-          FROM
-            services S
-              INNER JOIN service_types ST ON S.service_type_id = ST.id
-              INNER JOIN automobiles A    ON S.automobile_id = A.id
-          ORDER BY 
-            S.service_date DESC`;
-        console.log("QUERY: "+query);
-        tx.executeSql(query, null, (txObj, result) => {
-          console.log("RESULT: ", result);
-          setData(dbResultData(result));
-        });
-      });
-    }
 
-
+    //console.log("DATA 191: ",data);
     const ListItems = data && data.map((row, index) => {
       let color = "gray";
       let backgroundColor = null;
@@ -200,7 +187,6 @@ export const Status = {
           alert_time_sw=true;
         }
         else if(row.alert_time_type == "M" && (row.time_months > row.alert_time || (row.time_months == row.alert_time && row.time_days > 0))){
-          console.log("entro");
           alert_time_sw=true;
         }
         else if(row.alert_time_type == "Y" && row.time_months/12 > row.alert_time){
@@ -214,7 +200,7 @@ export const Status = {
         icon_color = "#ffeb3b";
       }
 
-      console.log("icon", icon);
+      //console.log("icon", icon);
 
       let time_periodo = me.formatTimePeriod(row.time_months, row.time_days);
       //Service Type - DD/XX/XXXX
@@ -222,7 +208,7 @@ export const Status = {
       return (
         <List.Item
           key={row.id}
-          title={row.service_type_name + " - " + moment(row.service_date).format('DD/MM/YYYY')}
+          title={row.service_type_name + " - " + moment(row.date).format('DD/MM/YYYY')}
           description=<Text>{me.formatKm(row.km) + " km" + (row.km_diff > 0 ? " ~ " + me.formatKm(row.km_diff) + " km" : "")+(time_periodo ? " / " + time_periodo : " ~  N/A")}{row.details && <Text style={{fontSize: 12, paddingLeft: 10}}> - {row.details}.</Text>}</Text>
           onPress={() => setSelection(row.id)}
           right={() => icon && <List.Icon icon={icon} color={icon_color} style={{marginLeft: 0, marginRight: 0}}/>}
@@ -239,29 +225,8 @@ export const Status = {
 
     return (
       <View style={uiStyle.container}>
-        <ActionBar
-          onRefresh={onRefresh}
-          append=<View style={{flexDirection: "row"}}>
-            <FAB
-              mode="flat"
-              color="white"
-              icon="car-wrench"
-              size="small"
-              onPress={() => navigation.navigate({ name: "Service.Form", params: { automobile_id: automobile?.id, automobile_name: automobile?.name } })}
-              style={uiStyle.fab}
-              />
-            <FAB
-              mode="flat"
-              color="white"
-              icon="gauge"
-              size="small"
-              onPress={() => navigation.navigate({ name: "Kilometer.Form", params: { automobile_id: automobile?.id, automobile_name: automobile?.name } })}
-              style={uiStyle.fab}
-              />
-            </View>
-          />
-        {me.header}
         <ScrollView style={{...uiStyle.scrollView, width: '100%'}}>
+          {me.header}
           <TextInput
             label="Automobile"
             value={automobile?.name}
@@ -285,8 +250,32 @@ export const Status = {
           <List.Section style={uiStyle.defaultWidth}>
             {ListItems}
           </List.Section>
+
+          {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
+
         </ScrollView>
-        {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
+
+        <ActionBar
+          onRefresh={onRefresh}
+          append=<View style={{flexDirection: "row"}}>
+            <FAB
+              mode="flat"
+              color="white"
+              icon="car-wrench"
+              size="small"
+              onPress={() => navigation.navigate({ name: "Service.Form", params: { automobile_id: automobile?.id, automobile_name: automobile?.name } })}
+              style={uiStyle.fab}
+              />
+            <FAB
+              mode="flat"
+              color="white"
+              icon="gauge"
+              size="small"
+              onPress={() => navigation.navigate({ name: "Kilometer.Form", params: { automobile_id: automobile?.id, automobile_name: automobile?.name } })}
+              style={uiStyle.fab}
+              />
+            </View>
+          />
       </View>
 
     );

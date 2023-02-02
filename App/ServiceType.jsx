@@ -19,7 +19,10 @@ const labelTimeType = (v) => {
 
 
 export const ServiceType = {
+  header: <Text style={uiStyle.indexHeader}>Service Types</Text>,
+
   List: ({ route, navigation }) => {
+    const me = ServiceType;
     const params = route.params;
     const [data, setData] = React.useState(null);
     const [selection, setSelection] = React.useState("");
@@ -58,6 +61,16 @@ export const ServiceType = {
     }
 
     const ListItems = data && data.map((row, index) => {
+      let color = "gray";
+      let backgroundColor = null;
+      let icon = "checkbox-blank-outline";
+
+      if(selection === row.id){
+        color = "#3f51b5";
+        backgroundColor = "#fafafa";
+        icon = "checkbox-marked";
+      }
+
       let description = [];
       if(row.alert_km>0)
         description.push(row.alert_km+" Km");
@@ -65,47 +78,39 @@ export const ServiceType = {
         description.push(row.alert_time+" "+labelTimeType(row.alert_time_type));
 
       return (
-        <React.Fragment key={row.id}>
-          { selection === row.id ?
-            <List.Item
-              title={row.name}
-              description={description.join(" / ")}
-              onPress={() => setSelection(row.id)}
-              left={() => <List.Icon icon="checkbox-marked" color="#3f51b5" style={{marginLeft: 8}}/>}
-              titleStyle={{color: "#3f51b5"}}
-              descriptionStyle={{color: "#3f51b5"}}
-              style={{backgroundColor: "#fafafa"}}
-              /> :
-            <List.Item
-              title={row.name}
-              description={description.join(" / ")}
-              onPress={() => setSelection(row.id)}
-              left={() => <List.Icon icon="checkbox-blank-outline" color="gray" style={{marginLeft: 8}}/>}
-              titleStyle={{color: "gray"}}
-              descriptionStyle={{color: "gray"}}
-              />
-          }
-        </React.Fragment>
+        <List.Item
+          key={row.id}
+          title={row.name}
+          description={description.join(" / ")}
+          onPress={() => setSelection(row.id)}
+          left={() => <List.Icon icon={icon} color={color} style={{marginLeft: 8}}/>}
+          titleStyle={{color: color}}
+          descriptionStyle={{color: color}}
+          style={{backgroundColor: backgroundColor, width: '100%', flex: 1}}
+        />
       );
     });
 
     return (
       <View style={uiStyle.container}>
+        <ScrollView style={{...uiStyle.scrollView, width: '100%'}}>
+          {me.header}
+          <List.Section style={uiStyle.defaultWidth}>
+            {ListItems}
+          </List.Section>
+          {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
+        </ScrollView>
         <ActionBar
           onAccept={onAccept}
           onRefresh={onRefresh}
           disabledAccept={!selection}
           />
-        <Text style={uiStyle.indexHeader}>Service Types</Text>
-        <List.Section style={uiStyle.defaultWidth}>
-          {ListItems}
-        </List.Section>
-        {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
       </View>
     );
   },
 
   Index: ({ navigation }) => {
+    const me = ServiceType;
     const [data, setData] = React.useState(null);
     const [selection, setSelection] = React.useState("");
     const [visibleMsgBox, setVisibleMsgBox] = React.useState(false);
@@ -159,6 +164,16 @@ export const ServiceType = {
 
 
     const ListItems = data && data.map((row, index) => {
+      let color = "gray";
+      let backgroundColor = null;
+      let icon = "checkbox-blank-outline";
+
+      if(selection === row.id){
+        color = "#3f51b5";
+        backgroundColor = "#fafafa";
+        icon = "checkbox-marked";
+      }
+
       let description = [];
       if(row.alert_km>0)
         description.push(row.alert_km+" Km");
@@ -166,32 +181,28 @@ export const ServiceType = {
         description.push(row.alert_time+" "+labelTimeType(row.alert_time_type));
 
       return (
-        <React.Fragment key={row.id}>
-          { selection === row.id ?
-            <List.Item
-              title={row.name}
-              description={description.join(" / ")}
-              onPress={() => setSelection(row.id)}
-              left={() => <List.Icon icon="checkbox-marked" color="#3f51b5" style={{marginLeft: 8}}/>}
-              titleStyle={{color: "#3f51b5"}}
-              descriptionStyle={{color: "#3f51b5"}}
-              style={{backgroundColor: "#fafafa"}}
-              /> :
-            <List.Item
-              title={row.name}
-              description={description.join(" / ")}
-              onPress={() => setSelection(row.id)}
-              left={() => <List.Icon icon="checkbox-blank-outline" color="gray" style={{marginLeft: 8}}/>}
-              titleStyle={{color: "gray"}}
-              descriptionStyle={{color: "gray"}}
-              />
-          }
-        </React.Fragment>
+        <List.Item
+          key={row.id}
+          title={row.name}
+          description={description.join(" / ")}
+          onPress={() => setSelection(row.id)}
+          left={() => <List.Icon icon={icon} color={color} style={{marginLeft: 8}}/>}
+          titleStyle={{color: color}}
+          descriptionStyle={{color: color}}
+          style={{backgroundColor: backgroundColor, width: '100%', flex: 1}}
+        />
       );
     });
 
     return (
       <View style={uiStyle.container}>
+        <ScrollView style={{...uiStyle.scrollView, width: '100%'}}>
+          {me.header}
+          <List.Section style={uiStyle.defaultWidth}>
+            {ListItems}
+          </List.Section>
+          {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
+        </ScrollView>
         <ActionBar
           onAdd={() => navigation.navigate('ServiceType.Form')}
           onRefresh={onRefresh}
@@ -200,17 +211,13 @@ export const ServiceType = {
           disabledEdit={!selection}
           disabledDelete={!selection}
           />
-        <Text style={uiStyle.indexHeader}>Service Types</Text>
-        <List.Section style={uiStyle.defaultWidth}>
-          {ListItems}
-        </List.Section>
-        {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
         {visibleMsgBox && <MsgBox visible={visibleMsgBox} setVisible={setVisibleMsgBox} title="Delete" message="Do you want to do it?" onDone={onDeleteDone} />}
       </View>
     );
   },
 
   Form: ({ route, navigation }) => {
+    const me = ServiceType;
     const params = route.params;
     const id = params && params.id ? params.id : "";
     const [name, setName] = React.useState(params && params?.name ? params.name : "");
@@ -248,13 +255,13 @@ export const ServiceType = {
 
         tx.executeSql(query, values, (txObj, result) => {});
 
-        navigation.navigate('ServiceType.Index');
+        navigation.goBack();
       });
     }
 
     return (
       <ScrollView style={uiStyle.scrollView}>
-        <Text style={uiStyle.indexHeader}>Service Types</Text>
+        {me.header}
         <TextInput
           label="Name"
           value={name}
@@ -275,6 +282,7 @@ export const ServiceType = {
             editable={isSwitchOnAlertKm}
             onChangeText={value => {setAlertKm(value)}}
             style={{flex: 1}}
+            keyboardType='numeric'
           />
         </View>
 
@@ -286,6 +294,7 @@ export const ServiceType = {
             editable={isSwitchOnAlertTime}
             onChangeText={value => {setAlertTime(value)}}
             style={{flex: 1}}
+            keyboardType='numeric'
           />
         </View>
 
@@ -308,7 +317,7 @@ export const ServiceType = {
             title="Cancel"
             style={uiStyle.buttonActionForm}
             contentStyle={uiStyle.buttonActionForm}
-            onPress={() => navigation.navigate('ServiceType.Index')}
+            onPress={() => navigation.goBack()}
           />
           <View style={{width: 20}} />
           <Button

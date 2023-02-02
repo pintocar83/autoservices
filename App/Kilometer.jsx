@@ -10,7 +10,7 @@ import { ActionBar, AddButton, MsgBox, uiStyle }  from './uiComponent';
 
 
 export const Kilometer = {
-  header: <Text style={uiStyle.indexHeader}>Kilometers Traveled</Text>,
+  header: <Text style={uiStyle.indexHeader}>Kilometers</Text>,
   formatKm: (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
 
   Index: ({ navigation }) => {
@@ -78,14 +78,13 @@ export const Kilometer = {
         icon = "checkbox-marked";
       }
 
-
       return (
         <List.Item
           key={row.id}
           title={
             <View style={{flexDirection: 'row', flexWrap: 'wrap', width: '100%'}}>
-              <Text style={{flex: 1, fontWeight: 'bold'}}>{me.formatKm(row.value) + " km  -  "}</Text>
-              <Text>{moment(row.register_date).format('DD/MM/YYYY hh:mma')}</Text>
+              <Text style={{color: color, flex: 1, fontWeight: 'bold'}}>{me.formatKm(row.value) + " km  -  "}</Text>
+              <Text style={{color: color}}>{moment(row.register_date).format('DD/MM/YYYY hh:mma')}</Text>
             </View>
           }
           description={row.automobile_name}
@@ -100,6 +99,13 @@ export const Kilometer = {
 
     return (
       <View style={uiStyle.container}>
+        <ScrollView style={{...uiStyle.scrollView, width: '100%'}}>
+          {me.header}
+          <List.Section style={uiStyle.defaultWidth}>
+            {ListItems}
+          </List.Section>
+          {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
+        </ScrollView>
         <ActionBar
           onAdd={() => navigation.navigate('Kilometer.Form')}
           onRefresh={onRefresh}
@@ -108,11 +114,6 @@ export const Kilometer = {
           disabledEdit={!selection}
           disabledDelete={!selection}
           />
-        {me.header}
-        <List.Section style={uiStyle.defaultWidth}>
-          {ListItems}
-        </List.Section>
-        {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
         {visibleMsgBox && <MsgBox visible={visibleMsgBox} setVisible={setVisibleMsgBox} title="Delete" message="Do you want to do it?" onDone={onDeleteDone} />}
       </View>
     );

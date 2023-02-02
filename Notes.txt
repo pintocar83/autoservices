@@ -28,8 +28,8 @@ Automobiles - Screen
 
 Service Type - Screen
 =====================
-[ ] Number KeyBoard para el campo kilometers
-[ ] Number KeyBoard para el campo days
+[X] Number KeyBoard para el campo kilometers
+[X] Number KeyBoard para el campo days
 
 
 Services - Screen

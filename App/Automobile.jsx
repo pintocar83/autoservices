@@ -8,7 +8,10 @@ import { ActionBar, AddButton, MsgBox, uiStyle }  from './uiComponent';
 
 
 export const Automobile = {
+  header: <Text style={uiStyle.indexHeader}>Automobiles</Text>,
+
   List: ({ route, navigation }) => {
+    const me = Automobile;
     const params = route.params;
     const [data, setData] = React.useState(null);
     const [selection, setSelection] = React.useState("");
@@ -45,6 +48,16 @@ export const Automobile = {
     }
 
     const ListItems = data && data.map((row, index) => {
+      let color = "gray";
+      let backgroundColor = null;
+      let icon = "checkbox-blank-outline";
+
+      if(selection === row.id){
+        color = "#3f51b5";
+        backgroundColor = "#fafafa";
+        icon = "checkbox-marked";
+      }
+
       let rightIcon=null;
       if(row.favorite)
         rightIcon = () => <List.Icon icon="star" color="#ffeb3b" />
@@ -52,49 +65,40 @@ export const Automobile = {
         rightIcon = () => <List.Icon icon="star" color="#eeeeee" />
 
       return (
-        <React.Fragment key={row.id}>
-          { selection === row.id ?
-            <List.Item
-              title={row.code}
-              description={row.name}
-              onPress={() => setSelection(row.id)}
-              left={() => <List.Icon icon="checkbox-marked" color="#3f51b5" style={{marginLeft: 8}}/>}
-              right={rightIcon}
-              titleStyle={{color: "#3f51b5"}}
-              descriptionStyle={{color: "#3f51b5"}}
-              style={{backgroundColor: "#fafafa"}}
-              /> :
-            <List.Item 
-              title={row.code}
-              description={row.name}
-              onPress={() => setSelection(row.id)}
-              left={() => <List.Icon icon="checkbox-blank-outline" color="gray" style={{marginLeft: 8}}/>}
-              right={rightIcon}
-              titleStyle={{color: "gray"}}
-              descriptionStyle={{color: "gray"}}
-              />
-          }
-        </React.Fragment>
+        <List.Item
+          key={row.id}
+          title={row.code}
+          description={row.name}
+          onPress={() => setSelection(row.id)}
+          left={() => <List.Icon icon={icon} color={color} style={{marginLeft: 8}}/>}
+          right={rightIcon}
+          titleStyle={{color: color}}
+          descriptionStyle={{color: color}}
+          style={{backgroundColor: backgroundColor, width: '100%', flex: 1}}
+        />
       );
     });
 
     return (
       <View style={uiStyle.container}>
+        <ScrollView style={{...uiStyle.scrollView, width: '100%'}}>
+          {me.header}
+          <List.Section style={uiStyle.defaultWidth}>
+            {ListItems}
+          </List.Section>
+          {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
+        </ScrollView>
         <ActionBar
           onAccept={onAccept}
           onRefresh={onRefresh}
           disabledAccept={!selection}
-          />
-        <Text style={uiStyle.indexHeader}>Automobiles</Text>
-        <List.Section style={uiStyle.defaultWidth}>
-          {ListItems}
-        </List.Section>
-        {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
+        />
       </View>
     );
   },
 
   Index: ({ navigation }) => {
+    const me = Automobile;
     const [data, setData] = React.useState(null);
     const [selection, setSelection] = React.useState("");
     const [visibleMsgBox, setVisibleMsgBox] = React.useState(false);
@@ -171,6 +175,16 @@ export const Automobile = {
     }
 
     const ListItems = data && data.map((row, index) => {
+      let color = "gray";
+      let backgroundColor = null;
+      let icon = "checkbox-blank-outline";
+
+      if(selection === row.id){
+        color = "#3f51b5";
+        backgroundColor = "#fafafa";
+        icon = "checkbox-marked";
+      }
+
       let rightIcon=null;
       if(row.favorite)
         rightIcon = () => <List.Icon icon="star" color="#ffeb3b" />
@@ -178,34 +192,29 @@ export const Automobile = {
         rightIcon = () => <List.Icon icon="star" color="#eeeeee" />
 
       return (
-        <React.Fragment key={row.id}>
-          { selection === row.id ?
-            <List.Item
-              title={row.code}
-              description={row.name}
-              onPress={() => setSelection(row.id)}
-              left={() => <List.Icon icon="checkbox-marked" color="#3f51b5" style={{marginLeft: 8}}/>}
-              right={rightIcon}
-              titleStyle={{color: "#3f51b5"}}
-              descriptionStyle={{color: "#3f51b5"}}
-              style={{backgroundColor: "#fafafa"}}
-              /> :
-            <List.Item 
-              title={row.code}
-              description={row.name}
-              onPress={() => setSelection(row.id)}
-              left={() => <List.Icon icon="checkbox-blank-outline" color="gray" style={{marginLeft: 8}}/>}
-              right={rightIcon}
-              titleStyle={{color: "gray"}}
-              descriptionStyle={{color: "gray"}}
-              />
-          }
-        </React.Fragment>
+        <List.Item
+          key={row.id}
+          title={row.code}
+          description={row.name}
+          onPress={() => setSelection(row.id)}
+          left={() => <List.Icon icon={icon} color={color} style={{marginLeft: 8}}/>}
+          right={rightIcon}
+          titleStyle={{color: color}}
+          descriptionStyle={{color: color}}
+          style={{backgroundColor: backgroundColor, width: '100%', flex: 1}}
+        />
       );
     });
 
     return (
       <View style={uiStyle.container}>
+        <ScrollView style={{...uiStyle.scrollView, width: '100%'}}>
+          {me.header}
+          <List.Section style={uiStyle.defaultWidth}>
+            {ListItems}
+          </List.Section>
+          {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
+        </ScrollView>
         <ActionBar
           onAdd={() => navigation.navigate('Automobile.Form')}
           onRefresh={onRefresh}
@@ -216,17 +225,13 @@ export const Automobile = {
           disabledDelete={!selection}
           disabledFavorite={!selection || isFavorite()}
           />
-        <Text style={uiStyle.indexHeader}>Automobiles</Text>
-        <List.Section style={uiStyle.defaultWidth}>
-          {ListItems}
-        </List.Section>
-        {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
         {visibleMsgBox && <MsgBox visible={visibleMsgBox} setVisible={setVisibleMsgBox} title="Delete" message="Do you want to do it?" onDone={onDeleteDone} />}
       </View>
     );
   },
 
   Form: ({ route, navigation }) => {
+    const me = Automobile;
     const params = route.params;
     const id = params && params.id ? params.id : "";
     const [code, setCode] = React.useState(params && params.code ? params.code : "");
@@ -272,7 +277,7 @@ export const Automobile = {
 
     return (
       <ScrollView style={uiStyle.scrollView}>
-        <Text style={uiStyle.indexHeader}>Automobiles</Text>
+        {me.header}
         <TextInput
           label="Number"
           value={code}

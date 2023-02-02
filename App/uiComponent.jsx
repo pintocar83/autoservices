@@ -92,7 +92,7 @@ export const uiStyle = StyleSheet.create({
     paddingTop: 0,
     paddingLeft: 0,
     paddingRight: 0,
-    paddingBottom: 80
+    paddingBottom: 50
   },
 
   scrollView: {

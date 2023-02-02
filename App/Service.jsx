@@ -108,12 +108,6 @@ export const Service = {
           key={row.id}
           title={moment(row.service_date).format('DD/MM/YYYY hh:mma') + " - " + row.service_type_name}
           description=<Text>{me.formatKm(row.km) + " km" + (row.km_diff > 0 ? " ~ " + me.formatKm(row.km_diff) + " km" : "")+(time_periodo ? " / " + time_periodo : "")}{row.details && <Text style={{fontSize: 12, paddingLeft: 10}}> - {row.details}.</Text>}</Text>
-          /*description={
-            <View style={{flexDirection: 'column', overflow: 'hidden'}}>
-              <Text style={{color: color}}>{me.formatKm(row.km) + " km" + (row.km_diff > 0 ? " ~ " + me.formatKm(row.km_diff) + " km" : "")+(time_periodo ? " / " + time_periodo : "")}</Text>
-              <Text style={{flex: 1, fontSize: 12, color: color}}>{row.details}</Text>
-            </View>
-          }*/
           onPress={() => setSelection(row.id)}
           left={() => <List.Icon icon={icon} color={color} style={{marginLeft: 8}}/>}
           titleStyle={{color: color}}
@@ -125,6 +119,13 @@ export const Service = {
 
     return (
       <View style={uiStyle.container}>
+        <ScrollView style={{...uiStyle.scrollView, width: '100%'}}>
+          {me.header}
+          <List.Section style={uiStyle.defaultWidth}>
+            {ListItems}
+          </List.Section>
+          {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
+        </ScrollView>
         <ActionBar
           onAdd={() => navigation.navigate('Service.Form')}
           onRefresh={onRefresh}
@@ -133,13 +134,6 @@ export const Service = {
           disabledEdit={!selection}
           disabledDelete={!selection}
           />
-        {me.header}
-        <ScrollView style={{...uiStyle.scrollView, width: '100%'}}>
-          <List.Section style={uiStyle.defaultWidth}>
-            {ListItems}
-          </List.Section>
-        </ScrollView>
-        {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
         {visibleMsgBox && <MsgBox visible={visibleMsgBox} setVisible={setVisibleMsgBox} title="Delete" message="Do you want to do it?" onDone={onDeleteDone} />}
       </View>
     );

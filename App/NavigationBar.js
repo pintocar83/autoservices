@@ -25,11 +25,11 @@ export default function NavigationBar({ navigation, back }) {
           anchor={
             <Appbar.Action icon="menu" color="#000000" onPress={openMenu} />
           }>
-          <Menu.Item onPress={() => {closeMenu(); navigation.navigate('Automobile.Index')}} title="Automobiles" />
-          <Menu.Item onPress={() => {closeMenu(); navigation.navigate('ServiceType.Index')}} title="Service Types" />
-          <Menu.Item onPress={() => {closeMenu(); navigation.navigate('Kilometer.Index')}} title="Kilometers Traveled" />
+          <Menu.Item onPress={() => {closeMenu(); navigation.navigate('Status.Index')}} title="Status" />
+          <Menu.Item onPress={() => {closeMenu(); navigation.navigate('Kilometer.Index')}} title="Kilometers" />
           <Menu.Item onPress={() => {closeMenu(); navigation.navigate('Service.Index')}} title="Services" />
-          <Menu.Item onPress={() => {closeMenu(); navigation.navigate('Status.Index')}} title="Services Status" />
+          <Menu.Item onPress={() => {closeMenu(); navigation.navigate('ServiceType.Index')}} title="Service Types" />
+          <Menu.Item onPress={() => {closeMenu(); navigation.navigate('Automobile.Index')}} title="Automobiles" />
           { false && <Menu.Item onPress={() => {closeMenu(); dbDelete()}} title="Database Restart" /> }
         </Menu>
       ) : null}
