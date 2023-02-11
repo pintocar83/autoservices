@@ -14,6 +14,9 @@ export const Kilometer = {
   formatKm: (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."),
 
   Index: ({ navigation }) => {
+    console.log("navigation",navigation);
+    console.log("navigation canGoBack",navigation.canGoBack());
+    console.log("navigation getParent",navigation.getParent());
     const me = Kilometer;
     const [data, setData] = React.useState(null);
     const [selection, setSelection] = React.useState("");
@@ -120,6 +123,10 @@ export const Kilometer = {
   },
 
   Form: ({ route, navigation }) => {
+    console.log("navigation",navigation);
+    console.log("navigation canGoBack",navigation.canGoBack());
+    console.log("navigation getParent",navigation.getParent());
+
     const me = Kilometer;
     const params = route.params;
     const id = params && params.id ? params.id : "";
@@ -233,6 +240,10 @@ export const Kilometer = {
       navigation.navigate('Automobile.List', {screen: 'Kilometer.Form'});
     }
 
+    const onCamera = () => {
+      navigation.navigate('CameraScreen.Index', {screen: 'Kilometer.Form'});
+    }
+
     return (
       <ScrollView style={uiStyle.scrollView}>
         {me.header}
@@ -304,6 +315,11 @@ export const Kilometer = {
           error={valueEmpty}
           onChangeText={v => {setValue(v); setValueEmpty(!v ? true : false);}}
           style={uiStyle.defaultWidth}
+          keyboardType='numeric'
+          right={<TextInput.Icon
+            icon="camera"
+            onPress={() => onCamera()}
+          />}
         />
         {valueEmpty && <HelperText type="error" style={uiStyle.defaultWidth}>
           Field required!

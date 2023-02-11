@@ -1,6 +1,6 @@
 import React from 'react';
 import { Appbar, Menu } from 'react-native-paper';
-import { dbDelete }  from './db';
+import { dbDelete, dbBackup, dbBackupJSON, dbRestoreJSON }  from './db';
 
 export default function NavigationBar({ navigation, back }) {
   const [visible, setVisible] = React.useState(false);
@@ -8,11 +8,7 @@ export default function NavigationBar({ navigation, back }) {
   const closeMenu = () => setVisible(false);
 
   return (
-    <Appbar.Header
-      style={{
-          backgroundColor: '#ffff80'
-        }}
-      >
+    <Appbar.Header>
       {back ? <Appbar.BackAction color="#000000" onPress={navigation.goBack} /> : null}
       <Appbar.Content
         title="Auto Services"
@@ -31,6 +27,9 @@ export default function NavigationBar({ navigation, back }) {
           <Menu.Item onPress={() => {closeMenu(); navigation.navigate('ServiceType.Index')}} title="Service Types" />
           <Menu.Item onPress={() => {closeMenu(); navigation.navigate('Automobile.Index')}} title="Automobiles" />
           { false && <Menu.Item onPress={() => {closeMenu(); dbDelete()}} title="Database Restart" /> }
+          { false && <Menu.Item onPress={() => {closeMenu(); dbBackup()}} title="Database Backup" /> }
+          <Menu.Item onPress={() => {closeMenu(); dbBackupJSON()}} title="Database Backup JSON" />
+          <Menu.Item onPress={() => {closeMenu(); dbRestoreJSON()}} title="Database Restore JSON" />
         </Menu>
       ) : null}
     </Appbar.Header>

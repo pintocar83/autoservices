@@ -1,12 +1,14 @@
 import React from 'react';
 import moment from 'moment';
-import { View, Text, Button, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, Button, ScrollView, StyleSheet, Alert, TouchableOpacity, RefreshControl } from 'react-native';
 import { DataTable, Divider, TextInput, RadioButton, Switch, HelperText, List, Appbar, FAB, useTheme, IconButton, MD3Colors, Drawer } from 'react-native-paper';
 import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SvgXml } from 'react-native-svg';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { db, dbResultData }  from './db';
-import { ActionBar, AddButton, MsgBox, uiStyle }  from './uiComponent';
+import { db, dbResultData, dbResultFirst }  from './db';
+import { ActionBar, AddButton, MsgBox, uiStyle, colorize, SvgDuotune, DSP }  from './uiComponent';
 
 
 export const Status = {
@@ -40,11 +42,36 @@ export const Status = {
 
     const [km, setKm] = React.useState({id: '', date: '', value: ''});
 
+    const [refreshing, setRefreshing] = React.useState(false);
+
+
+    const getFavoriteAutomobile = () =>  {
+      db.transaction(tx => {
+        let query = "SELECT * FROM automobiles WHERE favorite=1 LIMIT 1";
+        tx.executeSql(query, null, (txObj, result) => {
+          let record = dbResultFirst(result);
+          if(!record?.id) return;
+
+          setAutomobile({
+            id: record?.id,
+            name: record?.name
+          });
+          setAutomobileEmpty(false);
+        });
+      });
+    }
+
+    React.useEffect(() => {
+      console.log("First Execution");
+      //Find default autombile
+      getFavoriteAutomobile();
+    },[]);
+
     React.useEffect(() => {
       navigation.addListener('focus', () => {
         //console.log('FOCUS: Status params', params);
         //console.log('FOCUS: Status automobile', automobile);
-        onRefresh();
+        //onRefresh();
       });
     }, [navigation]);
     console.log("selection", selection);
@@ -87,26 +114,26 @@ export const Status = {
 
       setSelection("");
       console.log("onRefresh");
+      setRefreshing(true);
+
       db.transaction(tx => {
         let query = "SELECT * FROM kilometers WHERE automobile_id = ? ORDER BY register_date DESC LIMIT 1";
         console.log("QUERY: "+query);
         tx.executeSql(query, [automobile?.id], (txObj, result) => {
           console.log("RESULT: ", result);
-          let last_km = dbResultData(result);
-          console.log("DATA: ", last_km);
-          if(last_km.length>0 && last_km[0].id){
+          let current_kilometer = dbResultFirst(result);
+          console.log("DATA: ", current_kilometer);
+          if(current_kilometer?.id){
+            current_kilometer.register_date = moment().format("YYYY-MM-DD HH:mm:ss");
             setKm({
-              id: last_km[0].id,
-              date: last_km[0].register_date,
-              value: last_km[0].value
+              id: current_kilometer.id,
+              date: current_kilometer.register_date,
+              value: current_kilometer.value
             });
 
             //find service types, foreach last services display km (service), and calculate km / time diff
             //Service Type - DD/XX/XXXX
             //260.000 km ~ 4.000 km / 10 months / 5 days
-            
-            
-            //let query = "select S.id, ST.name service_type_name, max(S.service_date) date, S.km FROM services S INNER JOIN service_types ST ON S.service_type_id=ST.id GROUP BY S.service_type_id";
             let query = `
               SELECT
                 S.id,
@@ -122,48 +149,43 @@ export const Status = {
               GROUP BY
                 S.service_type_id`;
             tx.executeSql(query, null, (txObj, result) => {
-              let tmp = dbResultData(result);
-              //console.log("QUERY: ", query);
-              //console.log("RESULT TMP: ",tmp);
-              var tmp_data = [];
-              for(let i=0;i<tmp.length;i++){
+              let record = dbResultData(result);
 
+              let o = [];
+              for(let i=0;i<record.length;i++){
+                let km_diff = current_kilometer.value - record[i].km;
 
-                let km_diff = last_km[0].value - tmp[i].km;
-
-                let tmp_service_date = moment(last_km[0].register_date, "YYYY-MM-DD HH:mm:ss");
-                let tmp_service_date_previous = moment(tmp[i].date, "YYYY-MM-DD HH:mm:ss");
+                let tmp_service_date = moment(current_kilometer.register_date, "YYYY-MM-DD HH:mm:ss");
+                let tmp_service_date_previous = moment(record[i].date, "YYYY-MM-DD HH:mm:ss");
 
                 let months = tmp_service_date.diff(tmp_service_date_previous, 'months');
                 tmp_service_date_previous.add(months, 'months');
                 let days = tmp_service_date.diff(tmp_service_date_previous, 'days');
 
-
-                tmp_data.push({
-                  id: tmp[i].id,
-                  km: tmp[i].km,
-                  date: tmp[i].date,
-                  km_diff: km_diff,
-                  time_months: months,
-                  time_days: days,
-                  service_type_name: tmp[i].service_type_name,
-                  alert_km: tmp[i].alert_km,
-                  alert_time: tmp[i].alert_time,
-                  alert_time_type: tmp[i].alert_time_type
+                o.push({
+                  id:                record[i].id,
+                  km:                record[i].km,
+                  date:              record[i].date,
+                  service_type_name: record[i].service_type_name,
+                  alert_km:          record[i].alert_km,
+                  alert_time:        record[i].alert_time,
+                  alert_time_type:   record[i].alert_time_type,
+                  time_days:         days,
+                  time_months:       months,
+                  km_diff:           km_diff,
                 });
               }
 
-              //console.log("XXXXXXX ",tmp_data);
-              setData(tmp_data);
+              setData(o);
+              setRefreshing(false);
+            },
+            () => {
+              setRefreshing(false);
             });
-
-
-
-
           }
-
-
-
+          else{
+            setRefreshing(false);
+          }
         });
       });
     }
@@ -171,14 +193,15 @@ export const Status = {
 
     //console.log("DATA 191: ",data);
     const ListItems = data && data.map((row, index) => {
-      let color = "gray";
+      let color = colorize("dark");
+      let color_secondary = colorize("muted");
       let backgroundColor = null;
       let icon = null;
 
       if(selection === row.id){
-        color = "#3f51b5";
-        backgroundColor = "#fafafa";
-        //icon = "checkbox-marked";
+        color_secondary = color = "#002966";
+        //color_secondary = color;
+        backgroundColor = "#ffffb3";
       }
 
       let alert_time_sw=false;
@@ -195,9 +218,10 @@ export const Status = {
       }
 
       icon_color = color;
-      if(alert_time_sw || (row.km_diff > row.alert_km && row.alert_km > 0)){
-        icon = "alert";
-        icon_color = "#ffeb3b";
+      if(row.km_diff > row.alert_km && row.alert_km > 0){
+        //icon = "alert";
+        //icon_color = "#ffeb3b";
+        alert_time_sw = true;
       }
 
       //console.log("icon", icon);
@@ -205,6 +229,7 @@ export const Status = {
       let time_periodo = me.formatTimePeriod(row.time_months, row.time_days);
       //Service Type - DD/XX/XXXX
       //260.000 km ~ 4.000 km / 10 months / 5 days
+      /*
       return (
         <List.Item
           key={row.id}
@@ -217,68 +242,116 @@ export const Status = {
           style={{backgroundColor: backgroundColor, width: '100%', flex: 1}}
         />
       );
+      */
+      //alert_time_sw = true;
+
+      icon = ( alert_time_sw ?
+        <View style={{backgroundColor: colorize('bg-light-warning'), borderRadius: 5, padding: 5, marginRight: 10}}>
+          <SvgXml xml={SvgDuotune.Exclamation('warning')} width="22" height="22" />
+        </View> :
+        <View style={{backgroundColor: colorize('bg-light-primary'), borderRadius: 5, padding: 5, marginRight: 10}}>
+          <SvgXml xml={SvgDuotune.Gauge('primary')} width="22" height="22" />
+        </View>
+      );
+
+
+      return (
+        <TouchableOpacity
+          key={row.id}
+          onPress={ () => setSelection(row.id) }>
+          <View style={{width: '100%', flexDirection: 'row', alignItems: 'center', paddingBottom: 10, paddingTop: 10, paddingLeft: 15, paddingRight: 15, backgroundColor: backgroundColor}}>
+            { icon }
+            <View style={{flex: 1, flexDirection: 'column'}}>
+              <View style={{flexDirection: 'row'}}>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={{ flex: 1, fontWeight: 'bold', paddingRight: 5, fontSize: 13, color: color }}>{row.service_type_name}</Text>
+                <DSP.Badge theme="light-primary">{moment(row.date).format('DD/MM/YYYY')}</DSP.Badge>
+              </View>
+              <View style={{flexDirection: 'row'}}>
+                <Text numberOfLines={2} ellipsizeMode="tail" style={{ flex: 1, paddingRight: 5, fontSize: 12, color: color_secondary }}>
+                  <Text style={{fontWeight: 'bold'}}>{me.formatKm(row.km) + " km ~ "}</Text> {(row.km_diff >= 0 ? me.formatKm(row.km_diff) + " km" : "") + (time_periodo ? " / " + time_periodo : "")}
+                </Text>
+              </View>
+            </View>
+            <View style={{width: 0, height: 10, backgroundColor: 'red'}}></View>
+          </View>
+          { index < data.length -1 ? <DSP.Divider style={{marginLeft: 15, marginRight: 15}} /> : null }
+        </TouchableOpacity>
+      );
     });
 
     const onListAutomobile = () => {
       navigation.navigate('Automobile.List', {screen: 'Status.Index'});
     }
 
+
+    const [state, setState] = React.useState({ open: false });
+
+    const onStateChange = ({ open }) => setState({ open });
+
+    const { open } = state;
+
     return (
-      <View style={uiStyle.container}>
-        <ScrollView style={{...uiStyle.scrollView, width: '100%'}}>
-          {me.header}
-          <TextInput
-            label="Automobile"
-            value={automobile?.name}
-            error={automobileEmpty}
-            editable={false}
-            style={uiStyle.defaultWidth}
-            right={<TextInput.Icon
-              icon="magnify"
-              onPress={() => onListAutomobile()}
-            />}
-          />
-          {automobileEmpty && <HelperText type="error" style={uiStyle.defaultWidth}>
-            Field required!
-          </HelperText>}
-
-          { km?.id && <Text style={{paddingLeft: 15}}>
-            <Text style={{fontWeight: 'bold'}}>{me.formatKm(km?.value) + " km"}</Text>
-            <Text> - {moment(km.date).format('DD/MM/YYYY hh:mma')}</Text>
-          </Text> }
-
-          <List.Section style={uiStyle.defaultWidth}>
-            {ListItems}
-          </List.Section>
-
-          {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
-
+      <View style={{...uiStyle.container, backgroundColor: '#FFFFFF'}}>
+        <ScrollView
+          style = {{ ...uiStyle.scrollView, width: '100%', paddingHorizontal: 0 }}
+          refreshControl = { <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> }
+          >
+          <View style={{paddingLeft: 0, paddingRight: 0, paddingTop: 0, paddingBottom: 0}}>
+            <DSP.Card
+              title={automobile?.name}
+              description={ km?.id &&
+                <>
+                  <Text style={{fontWeight: 'bold'}}>{me.formatKm(km?.value) + " km"}</Text>
+                </>
+              }
+              onFind={() => onListAutomobile()}
+              >
+              { ListItems }
+              { data && data.length===0 &&
+                <View alignItems="center">
+                  <Icon name="eye-off" color={colorize("muted")} size={32} style={{marginTop: 50}} />
+                  <Text style={{color: colorize("muted")}}>No result</Text>
+                </View>
+              }
+            </DSP.Card>
+          </View>
         </ScrollView>
 
-        <ActionBar
-          onRefresh={onRefresh}
-          append=<View style={{flexDirection: "row"}}>
-            <FAB
-              mode="flat"
-              color="white"
-              icon="car-wrench"
-              size="small"
-              onPress={() => navigation.navigate({ name: "Service.Form", params: { automobile_id: automobile?.id, automobile_name: automobile?.name } })}
-              style={uiStyle.fab}
-              />
-            <FAB
-              mode="flat"
-              color="white"
-              icon="gauge"
-              size="small"
-              onPress={() => navigation.navigate({ name: "Kilometer.Form", params: { automobile_id: automobile?.id, automobile_name: automobile?.name } })}
-              style={uiStyle.fab}
-              />
-            </View>
-          />
+        <FAB.Group
+          open = { open }
+          visible
+          icon = { open ? 'dots-vertical': 'plus-thick' }
+          backdropColor="rgba(255,255,255,0.4)"
+          color="white"
+          fabStyle={{
+            backgroundColor: colorize("primary"),
+            borderRadius: 30
+          }}
+          actions={[
+            {
+              icon: 'gauge',
+              label: 'Kilometer',
+              color: "white",
+              labelStyle: {fontSize: 10, color: colorize("white"), backgroundColor: colorize("dark"), marginRight: -15, borderRadius: 3, paddingTop: 0, paddingBottom: 0, paddingLeft: 8, paddingRight: 8, lineHeight: 18},
+              style: { backgroundColor: colorize("primary"), borderRadius: 20 },
+              onPress: () => navigation.navigate({ name: "Kilometer.Form", params: { automobile_id: automobile?.id, automobile_name: automobile?.name } })
+            },
+            {
+              icon: 'car-wrench',
+              label: 'Service',
+              color: "white",
+              labelStyle: {fontSize: 10, color: colorize("white"), backgroundColor: colorize("dark"), marginRight: -15, borderRadius: 3, paddingTop: 0, paddingBottom: 0, paddingLeft: 8, paddingRight: 8, lineHeight: 18},
+              style: { backgroundColor: colorize("primary"), borderRadius: 20 },
+              onPress: () => navigation.navigate({ name: "Service.Form", params: { automobile_id: automobile?.id, automobile_name: automobile?.name } })
+            },
+          ]}
+          onStateChange={onStateChange}
+        />
+
       </View>
 
     );
   },
 
 }
+

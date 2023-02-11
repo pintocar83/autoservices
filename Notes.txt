@@ -14,8 +14,21 @@ gradlew assembleRelease
 android\app\build\outputs\apk\release\app-release.apk
 
 
+-Send file to device
+adb -s emulator-5554 push autoservices_restore.json  /storage/emulated/0/Download/
 
+-Shell device
+adb -s emulator-5554 shell
 
+-ADB Devices
+adb devices
+
+-Start on device
+npx react-native run-android --list-devices
+
+-Run on devices physical
+
+npx react-native run-android
 
 
 Correcion y Cambios Pendientes
