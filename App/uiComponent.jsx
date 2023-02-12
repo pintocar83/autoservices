@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
 import { Appbar, FAB, DefaultTheme, Button, Dialog, Text } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -152,6 +152,10 @@ export const uiStyle = StyleSheet.create({
 export const uiTheme = {
   ...DefaultTheme,
   colors: {
+    //custom consts
+    //topBarNavigator: "#1a1a1a",
+    topBarNavigator: "#263238",
+
     primary: "rgb(0, 0, 0)",
     onPrimary: "rgb(255, 255, 255)",
     primaryContainer: "rgb(151, 240, 255)",
@@ -191,7 +195,7 @@ export const uiTheme = {
     },
     surfaceDisabled: "rgba(25, 28, 29, 0.12)",
     onSurfaceDisabled: "rgba(25, 28, 29, 0.38)",
-    backdrop: "rgba(41, 50, 52, 0.4)"
+    backdrop: "rgba(41, 50, 52, 0.4)",
   }
 };
 
@@ -230,8 +234,8 @@ export const colorize = (c) => {
 };
 
 export const SvgDuotune = {
-  Find: (c) => {
-    let color = colorize(c);
+  Find: (color) => {
+    //let color = colorize(c);
     return `
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M21.7 18.9L18.6 15.8C17.9 16.9 16.9 17.9 15.8 18.6L18.9 21.7C19.3 22.1 19.9 22.1 20.3 21.7L21.7 20.3C22.1 19.9 22.1 19.3 21.7 18.9Z" fill="`+color+`"/>
@@ -240,8 +244,8 @@ export const SvgDuotune = {
     `;
   },
 
-  Gauge: (c) => {
-    let color = colorize(c);
+  Gauge: (color) => {
+    //let color = colorize(c);
     return `
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path opacity="0.3" d="M22.0318 8.59998C22.0318 10.4 21.4318 12.2 20.0318 13.5C18.4318 15.1 16.3318 15.7 14.2318 15.4C13.3318 15.3 12.3318 15.6 11.7318 16.3L6.93177 21.1C5.73177 22.3 3.83179 22.2 2.73179 21C1.63179 19.8 1.83177 18 2.93177 16.9L7.53178 12.3C8.23178 11.6 8.53177 10.7 8.43177 9.80005C8.13177 7.80005 8.73176 5.6 10.3318 4C11.7318 2.6 13.5318 2 15.2318 2C16.1318 2 16.6318 3.20005 15.9318 3.80005L13.0318 6.70007C12.5318 7.20007 12.4318 7.9 12.7318 8.5C13.3318 9.7 14.2318 10.6001 15.4318 11.2001C16.0318 11.5001 16.7318 11.3 17.2318 10.9L20.1318 8C20.8318 7.2 22.0318 7.59998 22.0318 8.59998Z" fill="`+color+`"/>
@@ -250,8 +254,8 @@ export const SvgDuotune = {
     `;
   },
 
-  Pin: (c) => {
-    let color = colorize(c);
+  Pin: (color) => {
+    //let color = colorize(c);
     return `
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path opacity="0.3" d="M5.78001 21.115L3.28001 21.949C3.10897 22.0059 2.92548 22.0141 2.75004 21.9727C2.57461 21.9312 2.41416 21.8418 2.28669 21.7144C2.15923 21.5869 2.06975 21.4264 2.0283 21.251C1.98685 21.0755 1.99507 20.892 2.05201 20.7209L2.886 18.2209L7.22801 13.879L10.128 16.774L5.78001 21.115Z" fill="`+color+`"/>
@@ -260,13 +264,35 @@ export const SvgDuotune = {
     `;
   },
 
-  Exclamation: (c) => {
-    let color = colorize(c);
+  Exclamation: (color) => {
+    //let color = colorize(c);
     return `
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect opacity="0.3" x="2" y="2" width="20" height="20" rx="10" fill="`+color+`"/>
         <rect x="11" y="14" width="7" height="2" rx="1" transform="rotate(-90 11 14)" fill="`+color+`"/>
         <rect x="11" y="17" width="2" height="2" rx="1" transform="rotate(-90 11 17)" fill="`+color+`"/>
+      </svg>
+    `;
+  },
+
+  Apps: (color) => {
+    //let color = colorize(c);
+    return `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 2H10C10.6 2 11 2.4 11 3V10C11 10.6 10.6 11 10 11H3C2.4 11 2 10.6 2 10V3C2 2.4 2.4 2 3 2Z" fill="`+color+`"/>
+        <path opacity="0.3" d="M14 2H21C21.6 2 22 2.4 22 3V10C22 10.6 21.6 11 21 11H14C13.4 11 13 10.6 13 10V3C13 2.4 13.4 2 14 2Z" fill="`+color+`"/>
+        <path opacity="0.3" d="M3 13H10C10.6 13 11 13.4 11 14V21C11 21.6 10.6 22 10 22H3C2.4 22 2 21.6 2 21V14C2 13.4 2.4 13 3 13Z" fill="`+color+`"/>
+        <path opacity="0.3" d="M14 13H21C21.6 13 22 13.4 22 14V21C22 21.6 21.6 22 21 22H14C13.4 22 13 21.6 13 21V14C13 13.4 13.4 13 14 13Z" fill="`+color+`"/>
+      </svg>
+    `;
+  },
+
+  Menu: (color) => {
+    //let color = colorize(c);
+    return `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M21 7H3C2.4 7 2 6.6 2 6V4C2 3.4 2.4 3 3 3H21C21.6 3 22 3.4 22 4V6C22 6.6 21.6 7 21 7Z" fill="`+color+`"/>
+        <path opacity="0.3" d="M21 14H3C2.4 14 2 13.6 2 13V11C2 10.4 2.4 10 3 10H21C21.6 10 22 10.4 22 11V13C22 13.6 21.6 14 21 14ZM22 20V18C22 17.4 21.6 17 21 17H3C2.4 17 2 17.4 2 18V20C2 20.6 2.4 21 3 21H21C21.6 21 22 20.6 22 20Z" fill="`+color+`"/>
       </svg>
     `;
   }
@@ -334,7 +360,7 @@ export const Card = (props) => {
           {props?.onFind &&
             <TouchableOpacity onPress={props?.onFind}>
               <View style={{backgroundColor: colorize('bg-light-default'), borderRadius: 5, padding: 5}}>
-                <SvgXml xml={SvgDuotune.Find('dark')} width="28" height="28" />
+                <SvgXml xml={SvgDuotune.Find(colorize('dark'))} width="28" height="28" />
               </View>
             </TouchableOpacity>
           }
@@ -361,8 +387,35 @@ export const Divider = (props) => {
   );
 }
 
+export const ButtonDescription = (props) => {
+
+  return (
+    <Pressable
+      android_ripple={{color: 'rgba(255, 255, 255, .2)', borderless: false}}
+      {...props}
+      style={{
+        paddingTop: 14,
+        paddingBottom: 14,
+        paddingLeft: 14,
+        paddingRight: 14,
+        flexDirection: 'row',
+        alignItems: "center",
+        borderRadius: 8,
+        ...props.style,
+      }}
+      >
+      { props.icon && <View style={{marginRight: 12}}>{props.icon({ color: props.color, size: 32 })}</View> }
+      <View style={{flexDirection: 'column', flex: 1}}>
+        <Text style={{color: props.color, fontSize: 18, fontWeight: 'bold'}}>{props.label}</Text>
+        <Text style={{color: props.color, fontSize:11, fontWeight: 600}}>{props.description}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
 export const DSP = {
   Card,
   Divider,
-  Badge
+  Badge,
+  ButtonDescription
 };

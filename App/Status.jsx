@@ -247,10 +247,10 @@ export const Status = {
 
       icon = ( alert_time_sw ?
         <View style={{backgroundColor: colorize('bg-light-warning'), borderRadius: 5, padding: 5, marginRight: 10}}>
-          <SvgXml xml={SvgDuotune.Exclamation('warning')} width="22" height="22" />
+          <SvgXml xml={SvgDuotune.Exclamation(colorize('warning'))} width="22" height="22" />
         </View> :
         <View style={{backgroundColor: colorize('bg-light-primary'), borderRadius: 5, padding: 5, marginRight: 10}}>
-          <SvgXml xml={SvgDuotune.Gauge('primary')} width="22" height="22" />
+          <SvgXml xml={SvgDuotune.Gauge(colorize('primary'))} width="22" height="22" />
         </View>
       );
 

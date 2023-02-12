@@ -245,103 +245,105 @@ export const Kilometer = {
     }
 
     return (
-      <ScrollView style={uiStyle.scrollView}>
-        {me.header}
+      <ScrollView style = {{...uiStyle.scrollView, backgroundColor: "white"}} >
+        <View style = {{alignItems: "center"}} >
+          {me.header}
 
-        <TextInput
-          label="Automobile"
-          value={automobile?.name}
-          error={automobileEmpty}
-          editable={false}
-          style={uiStyle.defaultWidth}
-          right={<TextInput.Icon
-            icon="magnify"
-            onPress={() => onListAutomobile()}
-          />}
-        />
-        {automobileEmpty && <HelperText type="error" style={uiStyle.defaultWidth}>
-          Field required!
-        </HelperText>}
-
-        <TextInput
-          label="Date"
-          value={date}
-          error={dateEmpty}
-          //editable={false}
-          onChangeText={v => {setDate(v); setDateEmpty(!v || !moment(v, "DD/MM/YYYY", true).isValid() ? true : false);}}
-          style={uiStyle.defaultWidth}
-          right={<TextInput.Icon
-            icon="calendar"
-            onPress={() => setDisplayDatePicker(true)}
-          />}
-        />
-        {dateEmpty && <HelperText type="error" style={uiStyle.defaultWidth}>
-          {!date.trim() ? "Field required!" : "Invalid value (Example: "+moment().format("DD/MM/YYYY")+")" }
-        </HelperText>}
-        <DatePickerModal
-          mode="single"
-          visible={displayDatePicker}
-          onDismiss={onDismissDatePicker}
-          date={new Date(date ? moment(date, "DD/MM/YYYY").format("YYYY-MM-DD")+" 00:00:00" : moment().format("YYYY-MM-DD")+" 00:00:00")}
-          onConfirm={onConfirmDatePicker}
-        />
-
-        <TextInput
-          label="Time"
-          value={time}
-          error={timeEmpty}
-          //editable={false}
-          onChangeText={v => {setTime(v); setTimeEmpty(!v || !moment(v, "hh:mm a", true).isValid() ? true : false);}}
-          style={uiStyle.defaultWidth}
-          right={<TextInput.Icon
-            icon="clock"
-            onPress={() => setDisplayTimePicker(true)}
-          />}
-        />
-        {timeEmpty && <HelperText type="error" style={uiStyle.defaultWidth}>
-          {!time.trim() ? "Field required!" : "Invalid value (Example: "+moment().format("hh:mm a")+")" }
-        </HelperText>}
-        <TimePickerModal
-          visible={displayTimePicker}
-          onDismiss={onDismissTimePicker}
-          onConfirm={onConfirmTimePicker}
-          hours={time.trim()?moment(time,"hh:mm a").format("HH"):"00"}
-          minutes={time.trim()?moment(time,"hh:mm a").format("mm"):"00"}
-        />
-
-        <TextInput
-          label="Kilometers"
-          value={value}
-          error={valueEmpty}
-          onChangeText={v => {setValue(v); setValueEmpty(!v ? true : false);}}
-          style={uiStyle.defaultWidth}
-          keyboardType='numeric'
-          right={<TextInput.Icon
-            icon="camera"
-            onPress={() => onCamera()}
-          />}
-        />
-        {valueEmpty && <HelperText type="error" style={uiStyle.defaultWidth}>
-          Field required!
-        </HelperText>}
-
-        <View style={uiStyle.buttonContainer}>
-          <Button
-            mode="contained"
-            title="Cancel"
-            style={uiStyle.buttonActionForm}
-            contentStyle={uiStyle.buttonActionForm}
-            onPress={() => navigation.goBack()}
+          <TextInput
+            label="Automobile"
+            value={automobile?.name}
+            error={automobileEmpty}
+            editable={false}
+            style={uiStyle.defaultWidth}
+            right={<TextInput.Icon
+              icon="magnify"
+              onPress={() => onListAutomobile()}
+            />}
           />
-          <View style={{width: 20}} />
-          <Button
-            mode="contained"
-            title="Done"
-            style={uiStyle.buttonActionForm}
-            contentStyle={uiStyle.buttonActionForm}
-            labelStyle={uiStyle.buttonActionForm}
-            onPress={onSave}
+          {automobileEmpty && <HelperText type="error" style={uiStyle.defaultWidth}>
+            Field required!
+          </HelperText>}
+
+          <TextInput
+            label="Date"
+            value={date}
+            error={dateEmpty}
+            //editable={false}
+            onChangeText={v => {setDate(v); setDateEmpty(!v || !moment(v, "DD/MM/YYYY", true).isValid() ? true : false);}}
+            style={uiStyle.defaultWidth}
+            right={<TextInput.Icon
+              icon="calendar"
+              onPress={() => setDisplayDatePicker(true)}
+            />}
           />
+          {dateEmpty && <HelperText type="error" style={uiStyle.defaultWidth}>
+            {!date.trim() ? "Field required!" : "Invalid value (Example: "+moment().format("DD/MM/YYYY")+")" }
+          </HelperText>}
+          <DatePickerModal
+            mode="single"
+            visible={displayDatePicker}
+            onDismiss={onDismissDatePicker}
+            date={new Date(date ? moment(date, "DD/MM/YYYY").format("YYYY-MM-DD")+" 00:00:00" : moment().format("YYYY-MM-DD")+" 00:00:00")}
+            onConfirm={onConfirmDatePicker}
+          />
+
+          <TextInput
+            label="Time"
+            value={time}
+            error={timeEmpty}
+            //editable={false}
+            onChangeText={v => {setTime(v); setTimeEmpty(!v || !moment(v, "hh:mm a", true).isValid() ? true : false);}}
+            style={uiStyle.defaultWidth}
+            right={<TextInput.Icon
+              icon="clock"
+              onPress={() => setDisplayTimePicker(true)}
+            />}
+          />
+          {timeEmpty && <HelperText type="error" style={uiStyle.defaultWidth}>
+            {!time.trim() ? "Field required!" : "Invalid value (Example: "+moment().format("hh:mm a")+")" }
+          </HelperText>}
+          <TimePickerModal
+            visible={displayTimePicker}
+            onDismiss={onDismissTimePicker}
+            onConfirm={onConfirmTimePicker}
+            hours={time.trim()?moment(time,"hh:mm a").format("HH"):"00"}
+            minutes={time.trim()?moment(time,"hh:mm a").format("mm"):"00"}
+          />
+
+          <TextInput
+            label="Kilometers"
+            value={value}
+            error={valueEmpty}
+            onChangeText={v => {setValue(v); setValueEmpty(!v ? true : false);}}
+            style={uiStyle.defaultWidth}
+            keyboardType='numeric'
+            right={<TextInput.Icon
+              icon="camera"
+              onPress={() => onCamera()}
+            />}
+          />
+          {valueEmpty && <HelperText type="error" style={uiStyle.defaultWidth}>
+            Field required!
+          </HelperText>}
+
+          <View style={uiStyle.buttonContainer}>
+            <Button
+              mode="contained"
+              title="Cancel"
+              style={uiStyle.buttonActionForm}
+              contentStyle={uiStyle.buttonActionForm}
+              onPress={() => navigation.goBack()}
+            />
+            <View style={{width: 20}} />
+            <Button
+              mode="contained"
+              title="Done"
+              style={uiStyle.buttonActionForm}
+              contentStyle={uiStyle.buttonActionForm}
+              labelStyle={uiStyle.buttonActionForm}
+              onPress={onSave}
+            />
+          </View>
         </View>
       </ScrollView>
     );

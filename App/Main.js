@@ -1,6 +1,6 @@
 import React from 'react';
 import 'react-native-gesture-handler';
-import { NavigationContainer, DrawerActions } from '@react-navigation/native';
+import { NavigationContainer, DrawerActions, useTheme } from '@react-navigation/native';
 
 import { createStackNavigator } from '@react-navigation/stack';
 import {
@@ -10,7 +10,8 @@ import {
   createDrawerNavigator
 } from '@react-navigation/drawer';
 
-import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import { createMaterialTopTabNavigator, MaterialTopTabBar } from '@react-navigation/material-top-tabs';
+
 
 
 //import { StatusBar } from 'expo-status-bar';
@@ -19,7 +20,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { SvgXml } from 'react-native-svg';
 
-import { colorize, SvgDuotune, DSP }  from './uiComponent';
+import { uiTheme, colorize, SvgDuotune, DSP }  from './uiComponent';
 import { db, dbCreate, dbResultData }  from './db';
 dbCreate();
 
@@ -31,6 +32,7 @@ import { ServiceType } from './ServiceType';
 import { Service } from './Service';
 import { Status } from './Status';
 import { CameraScreen } from './CameraScreen';
+import { MainMenu } from './MainMenu';
 
 
 
@@ -39,7 +41,19 @@ const Drawer = createDrawerNavigator();
 const Tab = createMaterialTopTabNavigator();
 
 
-import {View, Text, Button, StyleSheet, SafeAreaView, StatusBar, TouchableOpacity, TouchableHighlight, DrawerLayoutAndroid} from 'react-native';
+import {
+  Pressable,
+  Animated,
+  View,
+  Text,
+  Button,
+  StyleSheet,
+  SafeAreaView,
+  StatusBar,
+  TouchableOpacity,
+  TouchableHighlight,
+  DrawerLayoutAndroid
+} from 'react-native';
 
 /*
 const DrawerNavigatorItem = (props) => {
@@ -216,7 +230,6 @@ const DrawerNavigatorItem = (props) => {
 
 const LeftMenuBar = (props) => {
   let color_header = '#78909c';
-
   return (
     <SafeAreaView style={{flex: 1}}>
       <DrawerContentScrollView {...props} style={{marginTop: 0, backgroundColor: 'white', paddingBottom: 0}}>
@@ -235,63 +248,165 @@ const LeftMenuBar = (props) => {
 };
 
 function NavigationBar({ navigation, back, options, drawer }) {
-  //console.log("NAVEGATYION", props);
-  //const [visible, setVisible] = React.useState(false);
- // const openMenu = () => setVisible(true);
-  //const closeMenu = () => setVisible(false);
-
-  //const state = props.navigation.getState();
-  //console.log("STATE",state);
-
-  //const option = navigation.getOption();
-  console.log("OPTION",options);
-
   let leftAction = null;
   if(back)
     leftAction = <Appbar.BackAction color="white" onPress={navigation.goBack} />;
-  else
-    leftAction = <Appbar.Action icon="menu" color="white" onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())} />;
+  //else
+  //  leftAction = <Appbar.Action icon="menu" color="white" onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())} />;
 
   return (
     <Appbar.Header style={{
-        //height: 50,
-        backgroundColor: '#1a1a1a'
+        height: 60,
+        backgroundColor: uiTheme.colors.topBarNavigator
         }} >
       { leftAction }
       <Appbar.Content
         title={options.title ? options.title : "Auto Services"}
         color="white"
+        titleStyle = {{fontSize: 20}}
         />
     </Appbar.Header>
   );
 }
 
+function MyTabBar({ state, descriptors, navigation, ...rest }) {
+  const { colors } = useTheme();
+  const focusedOptions = descriptors[state.routes[state.index].key].options;
+
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        backgroundColor: colors.card,
+        height: 40,
+        ...focusedOptions.tabBarStyle,
+        elevation: 15
+      }}
+      >
+      {state.routes.map((route, index) => {
+        const { options } = descriptors[route.key];
+        const label =
+          options.tabBarLabel !== undefined
+            ? options.tabBarLabel
+            : options.title !== undefined
+            ? options.title
+            : route.name;
+
+        const isFocused = state.index === index;
+
+        const onPress = () => {
+          const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          });
+
+          if (!isFocused && !event.defaultPrevented) {
+            // The `merge: true` option makes sure that the params inside the tab screen are preserved
+            navigation.navigate({ name: route.name, merge: true });
+          }
+        };
+
+        const onLongPress = () => {
+          navigation.emit({
+            type: 'tabLongPress',
+            target: route.key,
+          });
+        };
+
+        let style={
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingLeft: 0,
+          paddingRight: 0,
+          paddingTop: 0,
+          paddingBottom: 0,
+          ...options.tabBarItemStyle,
+        };
+
+        let color = isFocused ? focusedOptions.tabBarActiveTintColor : focusedOptions.tabBarInactiveTintColor;
+        let tabBarIndicatorStyle = {};
+        if(focusedOptions.tabBarIndicatorStyle) {
+          if(isFocused) {
+            tabBarIndicatorStyle = focusedOptions.tabBarIndicatorStyle;
+          }
+          else {
+            if(focusedOptions.tabBarIndicatorStyle?.borderBottomColor){
+              tabBarIndicatorStyle = {...focusedOptions.tabBarIndicatorStyle, borderBottomColor: 'transparent'}
+            }
+          }
+        }
+
+        return (
+          <Pressable
+            android_ripple={{color: 'rgba(255, 255, 255, .1)', borderless: true}}
+            key={index}
+            accessibilityRole="button"
+            accessibilityState={isFocused ? { selected: true } : {}}
+            accessibilityLabel={options.tabBarAccessibilityLabel}
+            testID={options.tabBarTestID}
+            onPress={onPress}
+            onLongPress={onLongPress}
+            style={style}
+          >
+            <View style={{
+              flex: 1,
+              paddingLeft: 5,
+              paddingRight: 5,
+              width: "100%",
+              alignItems: 'center',
+              justifyContent: 'center',
+              ...tabBarIndicatorStyle
+              }}>
+              { options.tabBarShowLabel!==false && <Text style={{ fontWeight: "600", color: color }}>
+                {label}
+              </Text> }
+              { options.tabBarShowIcon !== false  && options.tabBarIcon && options.tabBarIcon({ color, size: 24 }) }
+            </View>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
 
 function TabScreen() {
   return (
-    <Tab.Navigator 
+    <Tab.Navigator
+      tabBar={props => <MyTabBar {...props} />}
+      initialRouteName="Status"
       screenOptions={{
         tabBarLabelStyle: { fontWeight: 600, textTransform: 'none' },
-        tabBarItemStyle: { width: 100 },
+        tabBarItemStyle: { flex: 1 },
         tabBarActiveTintColor: '#ffffff',
         tabBarInactiveTintColor: colorize("gray-500"),
-        tabBarStyle: { backgroundColor: '#1a1a1a' },
+        tabBarStyle: { backgroundColor: uiTheme.colors.topBarNavigator },
         tabBarIndicatorStyle: { 
           borderBottomColor: '#FFFFFF',
-          borderBottomWidth: 3,
-          display: 'flex'
-        }
+          borderBottomWidth: 3
+        },
       }}
       >
+      <Tab.Screen name="Menu" component={MainMenu} options={{
+          tabBarShowIcon: true,
+          tabBarShowLabel: false,
+          tabBarItemStyle: {
+            maxWidth: 50
+          },
+          tabBarIcon: ({ color, size }) => {
+            return <SvgXml xml={SvgDuotune.Apps(color)} width="24" height="24" />;
+          },
+        }} />
       <Tab.Screen name="Status" component={Status.Index} options={{
           tabBarLabel: 'Status',
-          //tabBarShowIcon: true,
-          //tabBarShowLabel: false,
-          //tabBarIcon: ({ color, size }) => (
-          //  <SvgXml xml={SvgDuotune.Pin('white')} width={size} height={size} />
-          //),
         }} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
+      <Tab.Screen name="Services" component={Service.Index} options={{
+          //tabBarItemStyle:  {width: 'auto'},
+        //tabBarLabelStyle: {
+          //width: 300
+        //}
+      }} />
     </Tab.Navigator>
   );
 }
@@ -303,19 +418,11 @@ const MainScreen = (props) => {
       screenOptions={{
         header: (props) => <NavigationBar {...props} />,
         headerStyle: {
-          backgroundColor: '#1a1a1a',
-          //color: '#FFFFFF'
+          backgroundColor: uiTheme.colors.topBarNavigator,
         },
         headerTitleStyle: {
           color: '#FFFFFF'
         },
-        //headerLeft: (p) => {
-        //  return (
-        //    p.canGoBack ?
-        //      <TouchableOpacity onPress={props.navigation.goBack}><Icon name="arrow-left" color="#FFFFFF" size={32} style={{marginLeft: 15, marginRight: 0}} /></TouchableOpacity> :
-        //      <TouchableOpacity onPress={() => props.navigation.dispatch(DrawerActions.toggleDrawer())}><Icon name="menu" color="#FFFFFF" size={32} style={{marginLeft: 15, marginRight: 0}} /></TouchableOpacity>
-        //  );
-        //}
       }}
       >
 
@@ -339,20 +446,22 @@ const MainScreen = (props) => {
 
 
 export default function Main(props) {
+  const disabledLeftMenuBar = false;
   return (
     <NavigationContainer>
       <StatusBar
         animated={true}
-        backgroundColor="#1a1a1a"
+        backgroundColor={uiTheme.colors.topBarNavigator}
       />
-      <Drawer.Navigator
+      { disabledLeftMenuBar ? <Drawer.Navigator
         initialRouteName="Main"
         screenOptions={{
           headerShown: false
         }}
         drawerContent={props => <LeftMenuBar {...props} />}>
         <Stack.Screen name="Main" component={MainScreen} />
-      </Drawer.Navigator>
+      </Drawer.Navigator> : <MainScreen />}
     </NavigationContainer>
   );
 }
+
