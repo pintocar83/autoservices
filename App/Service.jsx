@@ -1,12 +1,15 @@
 import React from 'react';
 import moment from 'moment';
-import { View, Text, Button, ScrollView, StyleSheet, Alert } from 'react-native';
-import { DataTable, Divider, TextInput, RadioButton, Switch, HelperText, List, Appbar, FAB, useTheme, IconButton, MD3Colors } from 'react-native-paper';
+import { View, Text, Button, ScrollView, FlatList, StyleSheet, Alert, TouchableOpacity, RefreshControl, Pressable } from 'react-native';
+import { DataTable, Divider, TextInput, RadioButton, Switch, HelperText, List, Appbar, FAB, useTheme, IconButton, MD3Colors, Drawer } from 'react-native-paper';
 import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { db, dbResultData }  from './db';
-import { ActionBar, AddButton, MsgBox, uiStyle }  from './uiComponent';
+import { SvgXml } from 'react-native-svg';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
+import { db, dbResultData, dbResultFirst }  from './db';
+import { ActionBar, AddButton, MsgBox, uiStyle, colorize, SvgDuotune, DSP }  from './uiComponent';
 
 
 export const Service = {
@@ -25,23 +28,46 @@ export const Service = {
     return v.join(" / ");
   },
 
-  Index: ({ navigation }) => {
+  Index: ({ route, navigation }) => {
+    console.log("INDE PARMS: ",route, navigation );
     const me = Service;
     const [data, setData] = React.useState(null);
-    const [selection, setSelection] = React.useState("");
+    const [selection, setSelection] = React.useState([]);
+    const [multiSelection, setMultiSelection] = React.useState(false);
     const [visibleMsgBox, setVisibleMsgBox] = React.useState(false);
+    const [refreshing, setRefreshing] = React.useState(false);
+
+    const headerVisible = route.name === "Services" ? false : true;
 
     React.useEffect(() => {
-      navigation.addListener('focus', () => {
-        console.log('FOCUS: Service');
-        onRefresh();
+      const unsubscribe = navigation.addListener('focus', () => {
+        if(global.refresh_screen["Service"]){
+          console.log("lobal.refresh_screen[Service] = true");
+          global.refresh_screen["Service"] = false;
+          onRefresh();
+        }
       });
+      return unsubscribe;
     }, [navigation]);
+
+    React.useEffect(() => {
+      console.log("First Execution");
+      if(global.refresh_screen["Service"]){
+        console.log("lobal.refresh_screen[Service] = true");
+        global.refresh_screen["Service"] = false;
+        onRefresh();
+      }
+    },[]);
+
+
     console.log("selection", selection);
 
     const onRefresh = () => {
-      setSelection("");
+      if(refreshing) return;
+      setSelection([]);
+      setMultiSelection(false);
       console.log("onRefresh");
+      setRefreshing(true);
       db.transaction(tx => {
         let query = `
           SELECT
@@ -59,6 +85,11 @@ export const Service = {
         tx.executeSql(query, null, (txObj, result) => {
           console.log("RESULT: ", result);
           setData(dbResultData(result));
+          //setData([]);
+          setRefreshing(false);
+        },
+        () => {
+          setRefreshing(false);
         });
       });
     }
@@ -89,51 +120,279 @@ export const Service = {
       });
     }
 
+    const onSelection = (id) => {
+      if( multiSelection ){
+        setSelection( currentSelection => {
+          const index = currentSelection.indexOf(id);
+          if( index >= 0 ) {
+            currentSelection.splice(index, 1);
+          }
+          else {
+            currentSelection.push(id);
+          }
+          return [...currentSelection];
+        });
+      }
+      else {
+        if(selection.length === 1 && selection[0] === id){
+          setSelection([]);
+        }
+        else{
+          setSelection([id]);
+        }
+      }
+    }
 
-    const ListItems = data && data.map((row, index) => {
-      let color = "gray";
-      let backgroundColor = null;
-      let icon = "checkbox-blank-outline";
+    const onMultiSelection = (id) => {
+      if(!multiSelection){
+        setSelection([...selection, id]);
+        setMultiSelection(true);
+      }
+      else if(multiSelection){
+        setSelection([id]);
+        setMultiSelection(false);
+      }
+    }
 
-      if(selection === row.id){
-        color = "#3f51b5";
-        backgroundColor = "#fafafa";
-        icon = "checkbox-marked";
+    const RowItem = (row, index) => {
+      let color = colorize("dark");
+      let color_secondary = colorize("muted");
+      let backgroundColor = "#FFFFFF";
+      let icon = null;
+      let alert_time_sw=false;
+      let time_periodo = me.formatTimePeriod(row.time_months, row.time_days);
+      let selected = false;
+      let icon_size = 56;
+      let icon_style_container = { borderRadius: 10, padding: 5, marginLeft: 10, marginTop: 0 };
+
+      if(selection.includes(row.id)){
+        selected = true;
+        color_secondary = color = colorize("primary");
+        backgroundColor = colorize("bg-light-warning");
       }
 
-      let time_periodo = me.formatTimePeriod(row.time_months, row.time_days);
+
+      if( multiSelection ){
+        if( selected ) {
+          icon = <View style={icon_style_container}>
+            <SvgXml xml={ SvgDuotune.CheckboxMarked(colorize('primary'))} width={icon_size} height={icon_size} />
+          </View>;
+        }
+        else {
+          icon = <View style={icon_style_container}>
+            <SvgXml xml={ SvgDuotune.CheckboxBlank(colorize('muted'))} width={icon_size} height={icon_size} />
+          </View>;
+        }
+      }
+      else {
+        icon = ( alert_time_sw ?
+          <View style={{ ...icon_style_container, backgroundColor: colorize('bg-light-warning'), elevation: (selection === row.id ? 2 : 0) }}>
+            <SvgXml xml={ SvgDuotune.Exclamation(colorize('warning')) } width={icon_size} height={icon_size} />
+          </View> :
+          <View style={{ ...icon_style_container, backgroundColor: colorize('bg-light-primary') }}>
+            <SvgXml xml={ SvgDuotune.Gauge(colorize('primary'))} width={icon_size} height={icon_size} />
+          </View>
+        );
+      }
+
+      //Service Type - DD/XX/XXXX
+      //260.000 km ~ 4.000 km / 10 months / 5 days
+      //Details
 
       return (
-        <List.Item
-          key={row.id}
-          title={moment(row.service_date).format('DD/MM/YYYY hh:mma') + " - " + row.service_type_name}
-          description=<Text>{me.formatKm(row.km) + " km" + (row.km_diff > 0 ? " ~ " + me.formatKm(row.km_diff) + " km" : "")+(time_periodo ? " / " + time_periodo : "")}{row.details && <Text style={{fontSize: 12, paddingLeft: 10}}> - {row.details}.</Text>}</Text>
-          onPress={() => setSelection(row.id)}
-          left={() => <List.Icon icon={icon} color={color} style={{marginLeft: 8}}/>}
-          titleStyle={{color: color}}
-          descriptionStyle={{color: color}}
-          style={{backgroundColor: backgroundColor, width: '100%', flex: 1}}
-        />
+        <Pressable
+          android_ripple = {{ color: colorize("pressable-warning"), borderless: false }}
+          onPress = { () => onSelection( row.id ) }
+          onLongPress = { () => onMultiSelection(row.id) }
+          style = {{
+            width: '100%',
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            paddingBottom: 10,
+            paddingTop: 10,
+            paddingLeft: 10,
+            paddingRight: 10,
+            backgroundColor: backgroundColor,
+            marginTop: index === 0 ? 20 : 0,
+            marginBottom: index === data.length - 1 ? 60 : 0,
+            //borderColor: colorize("gray-200"),
+            //borderWidth: 1,
+            marginBottom: 10,
+            borderRadius: 5,
+            elevation: 0
+          }} >
+          <View style={{flex: 1, flexDirection: 'column'}}>
+            <View style={{flexDirection: 'row'}}>
+              <Text numberOfLines={1} ellipsizeMode="tail" style={{ flex: 1, fontWeight: 'bold', paddingRight: 5, fontSize: 13, color: color }}>{ row.service_type_name }</Text>
+              <DSP.Badge theme="light-primary">{moment(row.date).format('DD/MM/YYYY')}</DSP.Badge>
+            </View>
+            <View style={{flexDirection: 'row'}}>
+              <Text style={{ fontSize: 12, color: color_secondary }}>
+                <Text style={{fontWeight: 'bold'}}>{me.formatKm(row.km) + " km"}</Text> {(row.km_diff > 0 ? " ~ " + me.formatKm(row.km_diff) + " km" : "") }
+              </Text>
+              <View style = {{ flex: 1 }} >
+                <Text numberOfLines={1} ellipsizeMode="tail" style={{ flex: 1, paddingLeft: 5, paddingRight: 5, textAlign: "right", fontSize: 12, color: color_secondary }}>
+                  { (time_periodo ? time_periodo : "") }
+                </Text>
+              </View>
+            </View>
+            <View>
+              <Text numberOfLines={2} ellipsizeMode="tail" style={{ flex: 1, paddingLeft: 0, paddingRight: 5, textAlign: "left", fontSize: 12, color: color_secondary }}>
+                { row.details }.
+              </Text>
+            </View>
+          </View>
+          { icon }
+        </Pressable>
       );
-    });
+    }
 
-    return (
-      <View style={uiStyle.container}>
-        <ScrollView style={{...uiStyle.scrollView, width: '100%'}}>
-          {me.header}
-          <List.Section style={uiStyle.defaultWidth}>
+    const RowItemOriginal = (row, index) => {
+      let color = colorize("dark");
+      let color_secondary = colorize("muted");
+      let backgroundColor = null;
+      let icon = null;
+      let alert_time_sw=false;
+      let time_periodo = me.formatTimePeriod(row.time_months, row.time_days);
+      let selected = false;
+
+      if(selection.includes(row.id)){
+        selected = true;
+        color_secondary = color = colorize("primary");
+        backgroundColor = colorize("bg-light-warning");
+      }
+
+
+      if( multiSelection ){
+        if( selected ) {
+          icon = <View style={{ borderRadius: 5, padding: 5, marginRight: 10, marginTop: 3, }}>
+            <SvgXml xml={ SvgDuotune.CheckboxMarked(colorize('primary'))} width="22" height="22" />
+          </View>;
+        }
+        else {
+          icon = <View style={{ borderRadius: 5, padding: 5, marginRight: 10, marginTop: 3, }}>
+            <SvgXml xml={ SvgDuotune.CheckboxBlank(colorize('muted'))} width="22" height="22" />
+          </View>;
+        }
+      }
+      else {
+        icon = ( alert_time_sw ?
+          <View style={{ backgroundColor: colorize('bg-light-warning'), borderRadius: 5, padding: 5, marginRight: 10, marginTop: 3, elevation: (selection === row.id ? 2 : 0) }}>
+            <SvgXml xml={ SvgDuotune.Exclamation(colorize('warning')) } width="22" height="22" />
+          </View> :
+          <View style={{ backgroundColor: colorize('bg-light-primary'), borderRadius: 5, padding: 5, marginRight: 10, marginTop: 3, }}>
+            <SvgXml xml={ SvgDuotune.Gauge(colorize('primary'))} width="22" height="22" />
+          </View>
+        );
+      }
+
+      //Service Type - DD/XX/XXXX
+      //260.000 km ~ 4.000 km / 10 months / 5 days
+      //Details
+
+      return (
+        <Pressable
+          android_ripple = {{ color: colorize("pressable-warning"), borderless: false }}
+          onPress = { () => onSelection( row.id ) }
+          onLongPress = { () => onMultiSelection(row.id) }
+          style = {{
+            width: '100%',
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            paddingBottom: 10,
+            paddingTop: 10,
+            paddingLeft: 15,
+            paddingRight: 15,
+            backgroundColor: backgroundColor,
+            marginTop: index === 0 ? 20 : 0,
+            marginBottom: index === data.length - 1 ? 60 : 0
+          }} >
+          { icon }
+          <View style={{flex: 1, flexDirection: 'column'}}>
+            <View style={{flexDirection: 'row'}}>
+              <Text numberOfLines={1} ellipsizeMode="tail" style={{ flex: 1, fontWeight: 'bold', paddingRight: 5, fontSize: 13, color: color }}>{ row.service_type_name }</Text>
+              <DSP.Badge theme="light-primary">{moment(row.date).format('DD/MM/YYYY')}</DSP.Badge>
+            </View>
+            <View style={{flexDirection: 'row'}}>
+              <Text style={{ fontSize: 12, color: color_secondary }}>
+                <Text style={{fontWeight: 'bold'}}>{me.formatKm(row.km) + " km"}</Text> {(row.km_diff > 0 ? " ~ " + me.formatKm(row.km_diff) + " km" : "") }
+              </Text>
+              <View style = {{ flex: 1 }} >
+                <Text numberOfLines={1} ellipsizeMode="tail" style={{ flex: 1, paddingLeft: 5, paddingRight: 5, textAlign: "right", fontSize: 12, color: color_secondary }}>
+                  { (time_periodo ? time_periodo : "") }
+                </Text>
+              </View>
+            </View>
+            <View>
+              <Text numberOfLines={2} ellipsizeMode="tail" style={{ flex: 1, paddingLeft: 0, paddingRight: 5, textAlign: "left", fontSize: 12, color: color_secondary }}>
+                { row.details }.
+              </Text>
+            </View>
+          </View>
+        </Pressable>
+      );
+    }
+
+
+    const ListItems = data && data.map((row, index) => {
+      return RowItem(row);
+    });
+    /*
+  <ScrollView
+          style = {{ ...uiStyle.scrollView, width: '100%', paddingHorizontal: 0 }}
+          refreshControl = { <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> }
+          >
+          { headerVisible && me.header}
+          <View style={{...uiStyle.defaultWidth, marginBottom: 65, paddingTop: 20 }}>
             {ListItems}
-          </List.Section>
+          </View>
           {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
         </ScrollView>
-        <ActionBar
-          onAdd={() => navigation.navigate('Service.Form')}
-          onRefresh={onRefresh}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          disabledEdit={!selection}
-          disabledDelete={!selection}
+    */
+
+    return (
+      <View style={{...uiStyle.container, backgroundColor: null}}>
+        { data && data.length===0 &&
+          <View alignItems="center">
+            <Icon name="eye-off" color={colorize("muted")} size={32} style={{marginTop: 50}} />
+            <Text style={{color: colorize("muted")}}>No result</Text>
+          </View>
+        }
+        <FlatList
+          data={data}
+          renderItem={ ({ item, index }) => RowItem(item, index) }
+          style = {{ ...uiStyle.scrollView, width: '100%', paddingHorizontal: 10 }}
+          refreshControl = { <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> }
           />
+
+        { selection.length >= 1 && <FAB
+          icon="delete"
+          color="white"
+          size ="small"
+          style={{
+            ...uiStyle.floatingDeleteFab
+          }}
+          onPress={onDelete}
+        /> }
+
+        { selection.length !== 1 && <FAB
+          icon="plus-thick"
+          color="white"
+          style={{
+            ...uiStyle.floatingFab
+          }}
+          onPress={() => navigation.navigate('Service.Form')}
+        /> }
+
+        { selection.length === 1 && <FAB
+          icon="pencil"
+          color="white"
+          style={{
+            ...uiStyle.floatingFab
+          }}
+          onPress={onEdit}
+        /> }
+
         {visibleMsgBox && <MsgBox visible={visibleMsgBox} setVisible={setVisibleMsgBox} title="Delete" message="Do you want to do it?" onDone={onDeleteDone} />}
       </View>
     );

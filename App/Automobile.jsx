@@ -40,6 +40,9 @@ export const Automobile = {
 
       const record = data.find(element => element.id == selection);
 
+      //global.refresh_screen["Status"] = true;
+      //navigation.goBack();
+
       navigation.navigate({
         name: params?.screen,
         params: {automobile: record},

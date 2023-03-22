@@ -32,9 +32,13 @@ import { ServiceType } from './ServiceType';
 import { Service } from './Service';
 import { Status } from './Status';
 import { CameraScreen } from './CameraScreen';
+import { KilometerScanCam } from './KilometerScanCam';
 import { MainMenu } from './MainMenu';
 
-
+global.refresh_screen = {};
+global.refresh_screen["Status"] = false;
+global.refresh_screen["Service"] = true;
+global.automobile = { id: '', name: '', code: '', km: '' };
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -380,7 +384,8 @@ function TabScreen() {
         tabBarLabelStyle: { fontWeight: 600, textTransform: 'none' },
         tabBarItemStyle: { flex: 1 },
         tabBarActiveTintColor: '#ffffff',
-        tabBarInactiveTintColor: colorize("gray-500"),
+        //tabBarInactiveTintColor: colorize("gray-500"),
+        tabBarInactiveTintColor: colorize("top-primary-inactive"),
         tabBarStyle: { backgroundColor: uiTheme.colors.topBarNavigator },
         tabBarIndicatorStyle: { 
           borderBottomColor: '#FFFFFF',
@@ -439,6 +444,7 @@ const MainScreen = (props) => {
       <Stack.Screen name="Service.Index" component={Service.Index} />
       <Stack.Screen name="Service.Form" component={Service.Form} />
       <Stack.Screen name="CameraScreen.Index" component={CameraScreen.Index} />
+      <Stack.Screen name="KilometerScanCam" component={KilometerScanCam} />
     </Stack.Navigator>
   );
 };

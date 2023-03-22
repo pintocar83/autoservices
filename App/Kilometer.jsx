@@ -64,7 +64,7 @@ export const Kilometer = {
         let query = "DELETE FROM kilometers WHERE id=?";
         console.log("QUERY: "+query);
         tx.executeSql(query, [selection], (txObj, result) => {});
-
+        global.refresh_screen["Status"] = true;
         onRefresh();
       });
     }
@@ -230,7 +230,7 @@ export const Kilometer = {
         console.log("QUERY",query,values);
 
         tx.executeSql(query, values, (txObj, result) => {});
-
+        global.refresh_screen["Status"] = true;
         //navigation.navigate('Kilometer.Index');
         navigation.goBack();
       });

@@ -8,6 +8,46 @@ import Svg, {
   SvgXml
 } from 'react-native-svg';
 
+
+export const formatKm = (num) => num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+
+export const colorize = (c) => {
+  switch(c){
+    case "top-primary":          return "#212121";
+    case "top-primary-inactive": return "rgba(255, 255, 255, .6)";
+    case "primary":              return "#009ef7";
+    case "success":              return "#50cd89";
+    case "info":                 return "#7239ea";
+    case "warning":              return "#ffc700";
+    case "danger":               return "#f1416c";
+    case "white":                return "#FFFFFF";
+    case "light":
+    case "gray-100":             return "#f9f9f9";
+    case "gray-200":             return "#f4f4f4";
+    case "secondary":
+    case "gray-300":             return "#e1e3ea";
+    case "gray-400":             return "#b5b5c3";
+    case "text-muted":
+    case "muted":
+    case "gray-500":             return "#a1a5b7";
+    case "gray-600":             return "#7e8299";
+    case "gray-700":             return "#5e6278";
+    case "gray-800":             return "#3f4254";
+    case "gray-900":
+    case "text-dark":
+    case "dark":                 return "#181c32";
+    case "bg-light-default":     return "#f5f8fa";
+    case "bg-light-primary":     return "#f1faff";
+    case "bg-light-success":     return "#e8fff3";
+    case "bg-light-info":        return "#f8f5ff";
+    case "bg-light-warning":     return "#fff8dd";
+    case "bg-light-danger":      return "#fff5f8";
+    case "pressable-warning":    return "rgba(255, 199, 0, .1)";
+  }
+  return "#a1a5b7";
+};
+
 export const AddButton = (props) => {
   return (
     <FAB
@@ -89,9 +129,25 @@ export const uiStyle = StyleSheet.create({
   },
 
   floatingFab: {
+    position: "absolute",
+    backgroundColor: colorize("top-primary"),
+    bottom: 15,
+    right: 15,
+    borderRadius: 30
+  },
+
+  floatingDeleteFab: {
+    position: "absolute",
+    backgroundColor: colorize("danger"),
+    bottom: 19,
+    left: 19,
+    borderRadius: 30
+  },
+
+  floatingFabOld: {
     position: 'absolute',
     bottom: 20,
-    right: 0,
+    //right: 0,
     marginRight: 10,
     borderRadius: 20,
     backgroundColor: '#3f51b5',
@@ -106,13 +162,13 @@ export const uiStyle = StyleSheet.create({
     paddingTop: 0,
     paddingLeft: 0,
     paddingRight: 0,
-    paddingBottom: 50
+    paddingBottom: 0
   },
 
   scrollView: {
     //backgroundColor: '#FFF', 
     marginHorizontal: 0,
-    paddingHorizontal: 10,
+    paddingHorizontal: 10
   },
 
   buttonContainer: {
@@ -154,7 +210,7 @@ export const uiTheme = {
   colors: {
     //custom consts
     //topBarNavigator: "#1a1a1a",
-    topBarNavigator: "#263238",
+    topBarNavigator: colorize("top-primary"),
 
     primary: "rgb(0, 0, 0)",
     onPrimary: "rgb(255, 255, 255)",
@@ -200,38 +256,7 @@ export const uiTheme = {
 };
 
 
-export const colorize = (c) => {
-  switch(c){
-    case "primary":              return "#009ef7";
-    case "success":              return "#50cd89";
-    case "info":                 return "#7239ea";
-    case "warning":              return "#ffc700";
-    case "danger":               return "#f1416c";
-    case "white":                return "#FFFFFF";
-    case "light":
-    case "gray-100":             return "#f9f9f9";
-    case "gray-200":             return "#f4f4f4";
-    case "secondary":
-    case "gray-300":             return "#e1e3ea";
-    case "gray-400":             return "#b5b5c3";
-    case "text-muted":
-    case "muted":
-    case "gray-500":             return "#a1a5b7";
-    case "gray-600":             return "#7e8299";
-    case "gray-700":             return "#5e6278";
-    case "gray-800":             return "#3f4254";
-    case "gray-900":
-    case "text-dark":
-    case "dark":                 return "#181c32";
-    case "bg-light-default":     return "#f5f8fa";
-    case "bg-light-primary":     return "#f1faff";
-    case "bg-light-success":     return "#e8fff3";
-    case "bg-light-info":        return "#f8f5ff";
-    case "bg-light-warning":     return "#fff8dd";
-    case "bg-light-danger":      return "#fff5f8";
-  }
-  return "#a1a5b7";
-};
+
 
 export const SvgDuotune = {
   Find: (color) => {
@@ -295,7 +320,24 @@ export const SvgDuotune = {
         <path opacity="0.3" d="M21 14H3C2.4 14 2 13.6 2 13V11C2 10.4 2.4 10 3 10H21C21.6 10 22 10.4 22 11V13C22 13.6 21.6 14 21 14ZM22 20V18C22 17.4 21.6 17 21 17H3C2.4 17 2 17.4 2 18V20C2 20.6 2.4 21 3 21H21C21.6 21 22 20.6 22 20Z" fill="`+color+`"/>
       </svg>
     `;
-  }
+  },
+
+  CheckboxMarked: (color) => {
+    return `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect opacity="0.3" x="2" y="2" width="20" height="20" rx="5" fill="`+color+`"/>
+        <path d="M10.4343 12.4343L8.75 10.75C8.33579 10.3358 7.66421 10.3358 7.25 10.75C6.83579 11.1642 6.83579 11.8358 7.25 12.25L10.2929 15.2929C10.6834 15.6834 11.3166 15.6834 11.7071 15.2929L17.25 9.75C17.6642 9.33579 17.6642 8.66421 17.25 8.25C16.8358 7.83579 16.1642 7.83579 15.75 8.25L11.5657 12.4343C11.2533 12.7467 10.7467 12.7467 10.4343 12.4343Z" fill="`+color+`"/>
+      </svg>
+    `;
+  },
+
+  CheckboxBlank: (color) => {
+    return `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect opacity="0.3" x="2" y="2" width="20" height="20" rx="5" fill="`+color+`"/>
+      </svg>
+    `;
+  },
 };
 
 export const Badge = (props) => {
@@ -334,15 +376,13 @@ export const Badge = (props) => {
 
 export const Card = (props) => {
   return (
-    <View style={{
+    <View {...props} style={{
       backgroundColor: 'white',
       width: '100%',
       flex: 1,
       paddingTop: 20,
-      paddingBottom: 10,
-      //borderRadius: 8,
-      //borderWidth: 1,
-      //borderColor: '#eff2f5'
+      marginBottom: 65,
+      ...props?.style
       }}>
       {/*HEADER*/}
       <View style={{

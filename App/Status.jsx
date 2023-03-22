@@ -1,11 +1,13 @@
 import React from 'react';
 import moment from 'moment';
-import { View, Text, Button, ScrollView, StyleSheet, Alert, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, Button, ScrollView, StyleSheet, Alert, TouchableOpacity, RefreshControl, Pressable } from 'react-native';
 import { DataTable, Divider, TextInput, RadioButton, Switch, HelperText, List, Appbar, FAB, useTheme, IconButton, MD3Colors, Drawer } from 'react-native-paper';
 import { DatePickerModal, TimePickerModal } from 'react-native-paper-dates';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+
+import { useFocusEffect } from '@react-navigation/native';
 
 import { db, dbResultData, dbResultFirst }  from './db';
 import { ActionBar, AddButton, MsgBox, uiStyle, colorize, SvgDuotune, DSP }  from './uiComponent';
@@ -35,13 +37,12 @@ export const Status = {
     const [visibleMsgBox, setVisibleMsgBox] = React.useState(false);
 
     const [automobile, setAutomobile] = React.useState({
-      id:   params?.automobile.id ? params?.automobile.id   : params?.automobile_id,
-      name: params?.automobile.id ? params?.automobile.name : params?.automobile_name
+      id:   params?.automobile?.id ? params?.automobile.id   : params?.automobile_id,
+      name: params?.automobile?.id ? params?.automobile.name : params?.automobile_name,
+      code: params?.automobile?.id ? params?.automobile.code : params?.automobile_code
     });
     const [automobileEmpty, setAutomobileEmpty] = React.useState(false);
-
     const [km, setKm] = React.useState({id: '', date: '', value: ''});
-
     const [refreshing, setRefreshing] = React.useState(false);
 
 
@@ -54,7 +55,8 @@ export const Status = {
 
           setAutomobile({
             id: record?.id,
-            name: record?.name
+            name: record?.name,
+            code: record?.code
           });
           setAutomobileEmpty(false);
         });
@@ -64,28 +66,17 @@ export const Status = {
     React.useEffect(() => {
       console.log("First Execution");
       //Find default autombile
-      getFavoriteAutomobile();
+      if(!automobile.id){
+        getFavoriteAutomobile();
+      }
     },[]);
 
     React.useEffect(() => {
-      navigation.addListener('focus', () => {
-        //console.log('FOCUS: Status params', params);
-        //console.log('FOCUS: Status automobile', automobile);
-        //onRefresh();
-      });
-    }, [navigation]);
-    console.log("selection", selection);
-
-    //React.useEffect(() => {
-    //  onRefresh();
-    //},[data]);
-
-    React.useEffect(() => {
       if(route.params?.automobile) {
-        //console.log("useEffect route.params?.automobile", route.params?.automobile);
         setAutomobile({
           id: route.params?.automobile.id,
-          name: route.params?.automobile.name
+          name: route.params?.automobile.name,
+          code: route.params?.automobile.code
         });
         setAutomobileEmpty(false);
       }
@@ -97,21 +88,25 @@ export const Status = {
       }
     },[automobile]);
 
+    React.useEffect(() => {
+      const unsubscribe = navigation.addListener('focus', () => {
+        if(global.refresh_screen["Status"]){
+          console.log("lobal.refresh_screen[Status] = true");
+          global.refresh_screen["Status"] = false;
+          onRefresh();
+        }
+      });
+      return unsubscribe;
+    }, [navigation, automobile]);
+
+
+
     const onRefresh = () => {
+      if(refreshing) return;
       if(!automobile?.id)
         return;
-      /*
-      db.transaction(tx => {
-        let query = "select S.id, ST.name service_type_name, max(S.service_date) date, S.km FROM services S INNER JOIN service_types ST ON S.service_type_id=ST.id GROUP BY S.service_type_id";
-        tx.executeSql(query, null, (txObj, result) => {
-          let xxxx = dbResultData(result);
-          console.log("YYYYYYYYYYYYYY",xxxx);
-
-        });
-      });
-
-      return;*/
-
+      global.automobile = { id: automobile?.id, name: automobile?.name, code: automobile?.code, km: km?.value };
+      console.log("global.automobile",global.automobile);
       setSelection("");
       console.log("onRefresh");
       setRefreshing(true);
@@ -130,6 +125,8 @@ export const Status = {
               date: current_kilometer.register_date,
               value: current_kilometer.value
             });
+
+            global.automobile.km = current_kilometer.value;
 
             //find service types, foreach last services display km (service), and calculate km / time diff
             //Service Type - DD/XX/XXXX
@@ -189,8 +186,15 @@ export const Status = {
         });
       });
     }
-
-
+/*
+    console.log("automobile:50] ",automobile);
+    console.log("global.refresh_screen[Status]:213 ",global.refresh_screen["Status"])
+    if(automobile.id && global.refresh_screen["Status"]){
+      console.log("refresh=true:52] ");
+      global.refresh_screen["Status"] = false;
+      onRefresh();
+    }
+*/
     //console.log("DATA 191: ",data);
     const ListItems = data && data.map((row, index) => {
       let color = colorize("dark");
@@ -199,9 +203,9 @@ export const Status = {
       let icon = null;
 
       if(selection === row.id){
-        color_secondary = color = "#002966";
+        color_secondary = color = colorize("dark");
         //color_secondary = color;
-        backgroundColor = "#ffffb3";
+        backgroundColor = colorize("bg-light-warning");
       }
 
       let alert_time_sw=false;
@@ -246,20 +250,22 @@ export const Status = {
       //alert_time_sw = true;
 
       icon = ( alert_time_sw ?
-        <View style={{backgroundColor: colorize('bg-light-warning'), borderRadius: 5, padding: 5, marginRight: 10}}>
-          <SvgXml xml={SvgDuotune.Exclamation(colorize('warning'))} width="22" height="22" />
+        <View style={{ backgroundColor: colorize('bg-light-warning'), borderRadius: 5, padding: 5, marginRight: 10, elevation: (selection === row.id ? 2 : 0) }}>
+          <SvgXml xml={ SvgDuotune.Exclamation(colorize('warning')) } width="22" height="22" />
         </View> :
-        <View style={{backgroundColor: colorize('bg-light-primary'), borderRadius: 5, padding: 5, marginRight: 10}}>
-          <SvgXml xml={SvgDuotune.Gauge(colorize('primary'))} width="22" height="22" />
+        <View style={{backgroundColor: colorize('bg-light-primary'), borderRadius: 5, padding: 5, marginRight: 10 }}>
+          <SvgXml xml={ SvgDuotune.Gauge(colorize('primary'))} width="22" height="22" />
         </View>
       );
 
 
       return (
-        <TouchableOpacity
-          key={row.id}
-          onPress={ () => setSelection(row.id) }>
-          <View style={{width: '100%', flexDirection: 'row', alignItems: 'center', paddingBottom: 10, paddingTop: 10, paddingLeft: 15, paddingRight: 15, backgroundColor: backgroundColor}}>
+        <View
+          key={row.id} >
+          <Pressable
+            android_ripple={{color: colorize("pressable-warning"), borderless: false}}
+            onPress={ () => setSelection( selection === row.id ? "" : row.id ) }
+            style = {{ width: '100%', flexDirection: 'row', alignItems: 'center', paddingBottom: 10, paddingTop: 10, paddingLeft: 15, paddingRight: 15, backgroundColor: backgroundColor }} >
             { icon }
             <View style={{flex: 1, flexDirection: 'column'}}>
               <View style={{flexDirection: 'row'}}>
@@ -267,20 +273,25 @@ export const Status = {
                 <DSP.Badge theme="light-primary">{moment(row.date).format('DD/MM/YYYY')}</DSP.Badge>
               </View>
               <View style={{flexDirection: 'row'}}>
-                <Text numberOfLines={2} ellipsizeMode="tail" style={{ flex: 1, paddingRight: 5, fontSize: 12, color: color_secondary }}>
-                  <Text style={{fontWeight: 'bold'}}>{me.formatKm(row.km) + " km ~ "}</Text> {(row.km_diff >= 0 ? me.formatKm(row.km_diff) + " km" : "") + (time_periodo ? " / " + time_periodo : "")}
+                <Text style={{ fontSize: 12, color: color_secondary }}>
+                  <Text style={{fontWeight: 'bold'}}>{me.formatKm(row.km) + " km ~ "}</Text> {(row.km_diff >= 0 ? me.formatKm(row.km_diff) + " km" : "") }
                 </Text>
+                <View style = {{ flex: 1 }} >
+                  <Text numberOfLines={2} ellipsizeMode="tail" textAlign="right" style={{ flex: 1, paddingLeft: 5, paddingRight: 5, textAlign: "right", fontSize: 12, color: color_secondary }}>
+                    { (time_periodo ? time_periodo : "") }
+                  </Text>
+                </View>
               </View>
             </View>
             <View style={{width: 0, height: 10, backgroundColor: 'red'}}></View>
-          </View>
+          </Pressable>
           { index < data.length -1 ? <DSP.Divider style={{marginLeft: 15, marginRight: 15}} /> : null }
-        </TouchableOpacity>
+        </View>
       );
     });
 
     const onListAutomobile = () => {
-      navigation.navigate('Automobile.List', {screen: 'Status.Index'});
+      navigation.navigate('Automobile.List', {screen: 'Status'});
     }
 
 
@@ -296,35 +307,28 @@ export const Status = {
           style = {{ ...uiStyle.scrollView, width: '100%', paddingHorizontal: 0 }}
           refreshControl = { <RefreshControl refreshing={refreshing} onRefresh={onRefresh} /> }
           >
-          <View style={{paddingLeft: 0, paddingRight: 0, paddingTop: 0, paddingBottom: 0}}>
-            <DSP.Card
-              title={automobile?.name}
-              description={ km?.id &&
-                <>
-                  <Text style={{fontWeight: 'bold'}}>{me.formatKm(km?.value) + " km"}</Text>
-                </>
-              }
-              onFind={() => onListAutomobile()}
-              >
-              { ListItems }
-              { data && data.length===0 &&
-                <View alignItems="center">
-                  <Icon name="eye-off" color={colorize("muted")} size={32} style={{marginTop: 50}} />
-                  <Text style={{color: colorize("muted")}}>No result</Text>
-                </View>
-              }
-            </DSP.Card>
-          </View>
+          <DSP.Card
+            title = { automobile?.name }
+            description = { km?.id &&<Text style={{fontWeight: 'bold'}}>{me.formatKm(km?.value) + " km"}</Text> }
+            onFind={ () => onListAutomobile() } >
+            { ListItems }
+            { data && data.length===0 &&
+              <View alignItems="center">
+                <Icon name="eye-off" color={colorize("muted")} size={32} style={{marginTop: 50}} />
+                <Text style={{color: colorize("muted")}}>No result</Text>
+              </View>
+            }
+          </DSP.Card>
         </ScrollView>
 
         <FAB.Group
           open = { open }
           visible
-          icon = { open ? 'dots-vertical': 'plus-thick' }
+          icon = { open ? 'dots-vertical' : 'plus-thick' }
           backdropColor="rgba(255,255,255,0.4)"
           color="white"
           fabStyle={{
-            backgroundColor: colorize("primary"),
+            backgroundColor: open ? colorize("primary") : colorize("top-primary"),
             borderRadius: 30
           }}
           actions={[
@@ -334,7 +338,7 @@ export const Status = {
               color: "white",
               labelStyle: {fontSize: 10, color: colorize("white"), backgroundColor: colorize("dark"), marginRight: -15, borderRadius: 3, paddingTop: 0, paddingBottom: 0, paddingLeft: 8, paddingRight: 8, lineHeight: 18},
               style: { backgroundColor: colorize("primary"), borderRadius: 20 },
-              onPress: () => navigation.navigate({ name: "Kilometer.Form", params: { automobile_id: automobile?.id, automobile_name: automobile?.name } })
+              onPress: () => navigation.navigate({ name: "KilometerScanCam", merge: true, params: { screen: 'Status', automobile_id: automobile?.id, automobile_name: automobile?.name, kilometers: km?.value } })
             },
             {
               icon: 'car-wrench',
