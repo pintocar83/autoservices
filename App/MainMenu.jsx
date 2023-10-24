@@ -1,28 +1,10 @@
 import React from 'react';
-import {
-  Pressable,
-  ScrollView,
-  View,
-  Text,
-  Button,
-  StyleSheet,
-  SafeAreaView,
-  StatusBar,
-  TouchableOpacity,
-  TouchableHighlight,
-  DrawerLayoutAndroid
-} from 'react-native';
-
-import { SvgXml } from 'react-native-svg';
+import { ScrollView, View } from 'react-native';
+import { uiStyle, colorize, DSP }  from './uiComponent';
+import { dbBackupJSON, dbRestoreJSON  } from './db';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { uiTheme, uiStyle, colorize, SvgDuotune, DSP }  from './uiComponent';
-
-
-
 export const MainMenu = ( {navigation,...props}) => {
-  //icon={({ color, size }) => <SvgXml xml={SvgDuotune.Find(color)} width={size} height={size} /> }
-
   const style = {
     width: 200,
     backgroundColor: colorize("primary"),
@@ -37,7 +19,7 @@ export const MainMenu = ( {navigation,...props}) => {
       <ScrollView
         style = {{ ...uiStyle.scrollView, width: '100%', paddingHorizontal: 0 }}
         >
-        <View style = {{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', marginTop: 50 }}>
+        <View style = {{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', marginTop: 50, paddingBottom: 50 }}>
           <DSP.ButtonDescription
             label="Automobiles"
             description="Administrator"
@@ -69,10 +51,24 @@ export const MainMenu = ( {navigation,...props}) => {
             icon={({ color, size }) => <Icon name="gauge" size={size} color={color} /> }
             onPress={() => navigation.navigate('Kilometer.Index')} 
             style={style} />
+
+          <DSP.ButtonDescription
+            label="Backup"
+            description="Database"
+            color={color}
+            icon={({ color, size }) => <Icon name="database-export" size={size} color={color} /> }
+            onPress={() => dbBackupJSON()} 
+            style={style} />
+
+          <DSP.ButtonDescription
+            disabled={false}
+            label="Restore"
+            description="Database"
+            color={color}
+            icon={({ color, size }) => <Icon name="database-import" size={size} color={color} /> }
+            onPress={() => dbRestoreJSON()} 
+            style={style} />
         </View>
       </ScrollView>
-
-
-
   );
 };

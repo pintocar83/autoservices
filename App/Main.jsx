@@ -21,7 +21,8 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SvgXml } from 'react-native-svg';
 
 import { uiTheme, colorize, SvgDuotune, DSP }  from './uiComponent';
-import { db, dbCreate, dbResultData }  from './db';
+import { useAutoServiceState }  from './hooks';
+import { db, dbCreate, dbResultFirst, dbResultData }  from './db';
 dbCreate();
 
 
@@ -31,6 +32,7 @@ import { Automobile } from './Automobile';
 import { ServiceType } from './ServiceType';
 import { Service } from './Service';
 import { Status } from './Status';
+import { Timeline } from './Timeline';
 import { CameraScreen } from './CameraScreen';
 import { KilometerScanCam } from './KilometerScanCam';
 import { MainMenu } from './MainMenu';
@@ -38,7 +40,35 @@ import { MainMenu } from './MainMenu';
 global.refresh_screen = {};
 global.refresh_screen["Status"] = false;
 global.refresh_screen["Service"] = true;
-global.automobile = { id: '', name: '', code: '', km: '' };
+global.automobile = { id: '', name: '', code: '', km: {} };
+
+global.setAutomobile = (record) => {
+  if(record.id)
+    global.automobile.id = record.id
+  if(record.code)
+    global.automobile.code = record.code
+  if(record.name)
+    global.automobile.name = record.name
+  if(record.km)
+    global.automobile.code = record.km
+}
+
+global.setAutomobileFavorite = (callback) => {
+  console.log("global.setAutomobileFavorite");
+  db.transaction(tx => {
+    let query = 'SELECT * FROM automobiles WHERE favorite=1 LIMIT 1';
+    console.log(query)
+    tx.executeSql(query, null, (txObj, result) => {
+      let record = dbResultFirst(result);
+      console.log("global.setAutomobileFavorite RECORD************* ",record)
+      if (!record?.id) return;
+      global.setAutomobile(record);
+      callback();
+    });
+  });
+};
+
+
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -252,11 +282,25 @@ const LeftMenuBar = (props) => {
 };
 
 function NavigationBar({ navigation, back, options, drawer }) {
+  //console.log("Main->NavigationBar->options", options);
   let leftAction = null;
   if(back)
     leftAction = <Appbar.BackAction color="white" onPress={navigation.goBack} />;
-  //else
-  //  leftAction = <Appbar.Action icon="menu" color="white" onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())} />;
+
+  let subtitle = null;
+  if(options.subtitle){
+    subtitle = <Text style={{ color: colorize('white'), fontSize:14, fontWeight: 500, letterSpacing: 0.5, paddingLeft: 5,}}>{options.subtitle}</Text>;
+  }
+
+  let subtitle_icon = null;
+  if(options.icon){
+    subtitle_icon = <Icon name={options.icon} size={20} color="white" />
+  }
+
+  let title = <View style={{flexDirection: 'row', alignItems: 'center', height: 60}}>
+    <Text style={{ color: '#FFFFFF', fontSize: 20, fontWeight: 700, flex:1}}>Auto Services</Text>
+    <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingRight: 10, paddingBottom: 8, alignSelf: 'flex-end'}}>{subtitle_icon}{subtitle}</View>
+  </View>;
 
   return (
     <Appbar.Header style={{
@@ -265,9 +309,7 @@ function NavigationBar({ navigation, back, options, drawer }) {
         }} >
       { leftAction }
       <Appbar.Content
-        title={options.title ? options.title : "Auto Services"}
-        color="white"
-        titleStyle = {{fontSize: 20}}
+        title={options.title ? options.title : title}
         />
     </Appbar.Header>
   );
@@ -361,12 +403,13 @@ function MyTabBar({ state, descriptors, navigation, ...rest }) {
               width: "100%",
               alignItems: 'center',
               justifyContent: 'center',
+              flexDirection: 'row',
               ...tabBarIndicatorStyle
               }}>
-              { options.tabBarShowLabel!==false && <Text style={{ fontWeight: "600", color: color }}>
+              { options.tabBarShowIcon !== false  && options.tabBarIcon && options.tabBarIcon({ color, size: 24 }) }
+              { options.tabBarShowLabel!==false && <Text style={{ fontWeight: "600", color: color, paddingLeft: (options.tabBarShowIcon !== false  && options.tabBarIcon ? 5: null) }}>
                 {label}
               </Text> }
-              { options.tabBarShowIcon !== false  && options.tabBarIcon && options.tabBarIcon({ color, size: 24 }) }
             </View>
           </Pressable>
         );
@@ -397,21 +440,43 @@ function TabScreen() {
           tabBarShowIcon: true,
           tabBarShowLabel: false,
           tabBarItemStyle: {
-            maxWidth: 50
+            //maxWidth: 80
           },
           tabBarIcon: ({ color, size }) => {
             return <SvgXml xml={SvgDuotune.Apps(color)} width="24" height="24" />;
           },
         }} />
       <Tab.Screen name="Status" component={Status.Index} options={{
+          tabBarShowIcon: true,
+          tabBarShowLabel: false,
+          tabBarItemStyle: {
+            //maxWidth: 80
+          },
+          tabBarIcon: ({ color, size }) => {
+            return <Icon name='heart-pulse' size={32} color={color} />;
+            //return <SvgXml xml={SvgDuotune.Health(color)} width="32" height="32" />;
+          },
           tabBarLabel: 'Status',
+          subtitle: 'Status',
         }} />
-      <Tab.Screen name="Services" component={Service.Index} options={{
+      <Tab.Screen name="Timeline" component={Timeline.Index} options={{
+          tabBarShowIcon: true,
+          tabBarShowLabel: false,
+          tabBarItemStyle: {
+            //maxWidth: 80
+          },
+          tabBarLabel: 'Timeline',
+          tabBarIcon: ({ color, size }) => {
+            return <Icon name='history' size={28} color={color} />;
+          },
+        }}
+        initialParams={{viewTab: true}} />
+      { false && <Tab.Screen name="Services" component={Service.Index} options={{
           //tabBarItemStyle:  {width: 'auto'},
         //tabBarLabelStyle: {
           //width: 300
         //}
-      }} />
+      }} />}
     </Tab.Navigator>
   );
 }
@@ -432,17 +497,18 @@ const MainScreen = (props) => {
       >
 
       <Stack.Screen name="TabScreen" component={TabScreen} />
-      <Stack.Screen name="Status.Index" component={Status.Index} options={{title: 'Status'}} />
-      <Stack.Screen name="Kilometer.Index" component={Kilometer.Index} />
-      <Stack.Screen name="Kilometer.Form" component={Kilometer.Form} />
+      <Stack.Screen name="Status.Index" component={Status.Index} />
+      <Stack.Screen name="Timeline.Index" component={Timeline.Index} />
+      <Stack.Screen name="Kilometer.Index" component={Kilometer.Index} options={{subtitle: 'Kilometers', icon: 'gauge'}} />
+      <Stack.Screen name="Kilometer.Form" component={Kilometer.Form} options={{subtitle: 'Kilometers', icon: 'gauge'}} />
       <Stack.Screen name="Automobile.Index" component={Automobile.Index} />
       <Stack.Screen name="Automobile.List" component={Automobile.List} />
       <Stack.Screen name="Automobile.Form" component={Automobile.Form} />
       <Stack.Screen name="ServiceType.Index" component={ServiceType.Index} />
       <Stack.Screen name="ServiceType.List" component={ServiceType.List} />
       <Stack.Screen name="ServiceType.Form" component={ServiceType.Form} />
-      <Stack.Screen name="Service.Index" component={Service.Index} />
-      <Stack.Screen name="Service.Form" component={Service.Form} />
+      <Stack.Screen name="Service.Index" component={Service.Index} options={{subtitle: 'Services', icon: 'car-wrench'}} />
+      <Stack.Screen name="Service.Form" component={Service.Form} options={{subtitle: 'Services', icon: 'car-wrench'}} />
       <Stack.Screen name="CameraScreen.Index" component={CameraScreen.Index} />
       <Stack.Screen name="KilometerScanCam" component={KilometerScanCam} />
     </Stack.Navigator>
@@ -452,6 +518,14 @@ const MainScreen = (props) => {
 
 
 export default function Main(props) {
+  /*const [globalState, setGlobalState] = useAutoServiceState();
+
+  React.useEffect(()=>{
+    console.log("USE useEffect MAIN")
+    global.setAutomobileFavorite(()=>{
+      setGlobalState({automobile: global.automobile})
+    });
+  }, []);*/
   const disabledLeftMenuBar = false;
   return (
     <NavigationContainer>

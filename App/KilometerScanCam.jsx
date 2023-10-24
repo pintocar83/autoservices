@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
-import { View, Text, StyleSheet, PermissionsAndroid, TouchableOpacity } from 'react-native';
-import { DataTable, Divider, TextInput, RadioButton, Switch, HelperText, List, Appbar, FAB, useTheme, IconButton, MD3Colors, Drawer } from 'react-native-paper';
+import { View, Text, TextInput, StyleSheet, PermissionsAndroid, TouchableOpacity } from 'react-native';
+import { DataTable, Divider, RadioButton, Switch, HelperText, List, Appbar, FAB, useTheme, IconButton, MD3Colors, Drawer } from 'react-native-paper';
 
 //import { useSharedValue } from 'react-native-reanimated';
 import { runOnJS } from 'react-native-reanimated';
@@ -20,10 +20,13 @@ import {
 import { OCRFrame, scanOCR } from 'vision-camera-ocr';
 
 import { Camera, frameRateIncluded } from 'react-native-vision-camera';
+import TextInputMask from 'react-native-text-input-mask';
 
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 //import { uiStyle }  from './uiComponent';
-import { db }  from './db';
+import { db } from './db';
+import { useAutoServiceState } from './hooks';
+import { Automobile } from './Automobile';
 import { formatKm, ActionBar, AddButton, MsgBox, uiStyle, colorize, SvgDuotune, DSP }  from './uiComponent';
 
 const camPermission = async () => {
@@ -52,11 +55,12 @@ const camPermission = async () => {
   return true;
 };
 
+
 export const KilometerScanCam = ({ route, navigation }) => {
-  //console.log("route->", route);
   //console.log("navigation->", navigation);
 
   const params = route.params;
+  console.log("KilometerScanCam->params", params);
 
   const camera = React.useRef(null);
   const isFocused = useIsFocused();
@@ -75,6 +79,7 @@ export const KilometerScanCam = ({ route, navigation }) => {
   const [values, setValues] = React.useState({});
   const currentKm = params?.kilometers ? params?.kilometers : 0;
 
+  const [autoservice, setAutoservice] = useAutoServiceState();
 
   //const catBounds = useSharedValue({ top: 0, left: 0, right: 0, bottom: 0 });
   //const imageBounds = useSharedValue({ top: 0, left: 0, right: 0, bottom: 0 })
@@ -220,8 +225,8 @@ export const KilometerScanCam = ({ route, navigation }) => {
     return null;
   }
 
-  const onCapture = async() => {
-    const _scanning = !scanning;
+  const onCapture = async(v) => {
+    const _scanning = (v===true ||v===false) ? v : !scanning;
     setScanning(_scanning);
     if(_scanning){
       setValues({});
@@ -244,14 +249,35 @@ export const KilometerScanCam = ({ route, navigation }) => {
     db.transaction(tx => {
       let query="INSERT INTO kilometers(automobile_id,register_date,value) VALUES(?,?,?)";
       let values=[params?.automobile_id, register_date, maxValue];
-      tx.executeSql(query, values, (txObj, result) => {});
-      global.refresh_screen["Status"] = true;
+      //console.log("KilometerScanCam->onSave->query",query,values);
+      tx.executeSql(query, values, (txObj, result) => {
+        //console.log("KilometerScanCam->onSave->insert",result);
+        if(result.insertId){
+          Automobile.getCurrentKm(
+            autoservice.automobile.id,
+            (record)=>{
+              //console.log("KilometerScanCam->onSave->Automobile.getCurrentKm->record",record);
+              const new_values = {
+                automobile: {
+                  ...autoservice.automobile,
+                  km: record.value,
+                  km_date: record.register_date,
+                }
+              };
+              //console.log("KilometerScanCam->onSave->Automobile.getCurrentKm->new_values",new_values);
+              setAutoservice(new_values);
+          })
+        }
+
+      });
+
       navigation.goBack();
     });
 
 
   };
 
+  
   return (
     <View
       style={StyleSheet.absoluteFill}>
@@ -267,27 +293,58 @@ export const KilometerScanCam = ({ route, navigation }) => {
         frameProcessorFps={5}
         frameProcessor={frameProcessor}
       />
-      <Text style = {{...StyleSheet.absoluteFill, color: "white" }} >Scanning: {scanning ? "true" : "false"} {"\n"}{ocrText}</Text>
+      <Text style = {{...StyleSheet.absoluteFill, color: colorize("muted"), paddingLeft: 5, top: 35, fontSize: 12 }} >{ocrText}</Text>
       <View style = {{
         ...StyleSheet.absoluteFill,
         alignItems: "center",
         justifyContent: "center"
         }} >
-        <TouchableOpacity
-          onPress={ () => { onCapture() } } >
-          <Text style = {{
-            color: "white",
-            fontSize: 20,
-            fontWeight: "bold",
-            backgroundColor: "rgba(0,0,0,0.5)",
-            paddingTop: 10,
-            paddingBottom: 10,
-            paddingLeft: 20,
-            paddingRight: 20,
-            borderRadius: 8
-          }} > {formatKm(maxValue)} Km </Text>
-        </TouchableOpacity>
+        <View style = {{
+          flexDirection: 'row',
+          alignItems: 'center',
+          color: "white",
+          fontSize: 20,
+          fontWeight: "bold",
+          backgroundColor: "rgba(0,0,0,0.5)",
+          paddingTop: 0,
+          paddingBottom: 0,
+          paddingLeft: 20,
+          paddingRight: 20,
+          borderRadius: 8
+        }} >
+          <TextInputMask
+            value={formatKm(maxValue)}
+            keyboardType="numeric"
+            onFocus={()=>{
+              setScanning(false);
+            }}
+            onEndEditing={()=>{
+              setMaxValue(maxValue || 0);
+            }}
+            onChangeText={(formatted, extracted) => {
+              setMaxValue(extracted);
+            }}
+            mask={'[9…].[000].[000].[000].[000].[000].[000].[000]'}
+            rightToLeft={true}
+            textAlign={'right'}
+            style = {{
+              color: "white",
+              fontSize: 20,
+              fontWeight: "bold",
+              paddingLeft: 5,
+            }}
+          /><Text style = {{
+          color: "white",
+          fontSize: 20,
+          fontWeight: "bold"}}>Km</Text>
+        </View>
       </View>
+      <TouchableOpacity
+        style={{flexDirection: 'row', alignItems: 'center'}}
+        onPress={ () => { onCapture() } } >
+        <Icon name={ scanning ? "record" : "pause" } size={30} color={ scanning ? colorize("red") : "white" } />
+        <Text style={{color: 'white'}}>{scanning ? "Scanning..." : "Pause"}</Text>
+      </TouchableOpacity>
 
       <FAB
         icon = "flash"
@@ -303,7 +360,6 @@ export const KilometerScanCam = ({ route, navigation }) => {
         }}
         onPress = { () => setFlashlight( !flashlight ) }
       />
-
       <FAB
         icon="check-bold"
         color="white"

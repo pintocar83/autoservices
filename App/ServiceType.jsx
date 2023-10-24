@@ -1,118 +1,239 @@
 import React from 'react';
-import { View, Text, Button, ScrollView, StyleSheet, Alert } from 'react-native';
-import { DataTable, Divider, TextInput, RadioButton, Switch, HelperText, List, Appbar, FAB, useTheme, IconButton, MD3Colors } from 'react-native-paper';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  View,
+  Text,
+  Button,
+  ScrollView,
+  FlatList,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+  RefreshControl,
+  Pressable,
+} from 'react-native';
+import {
+  DataTable,
+  Divider,
+  TextInput,
+  HelperText,
+  List,
+  Appbar,
+  FAB,
+  useTheme,
+  IconButton,
+  MD3Colors,
+} from 'react-native-paper';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
-import { db, dbResultData }  from './db';
-import { ActionBar, AddButton, MsgBox, uiStyle }  from './uiComponent';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
+import {db, dbResultFirst, dbResultData} from './db';
+import {
+  ActionBar,
+  AddButton,
+  MsgBox,
+  uiStyle,
+  colorize,
+  SvgDuotune,
+  DSP,
+} from './uiComponent';
+import {useAutoServiceState} from './hooks';
 
-const labelTimeType = (v) => {
-  if(v=="D")
-    return "days";
-  if(v=="M")
-    return "months";
-  if(v=="Y")
-    return "years";
-  return "";
-}
-
+const labelTimeType = v => {
+  if (v == 'D') return 'days';
+  if (v == 'M') return 'months';
+  if (v == 'Y') return 'years';
+  return '';
+};
 
 export const ServiceType = {
   header: <Text style={uiStyle.indexHeader}>Service Types</Text>,
 
-  List: ({ route, navigation }) => {
+  List: ({route, navigation}) => {
     const me = ServiceType;
     const params = route.params;
     const [data, setData] = React.useState(null);
-    const [selection, setSelection] = React.useState("");
+    const [selection, setSelection] = React.useState('');
+    const [refreshing, setRefreshing] = React.useState(false);
+    const [autoservice, setAutoservice] = useAutoServiceState();
 
     React.useEffect(() => {
       navigation.addListener('focus', () => {
-        console.log('FOCUS: ServiceType');
+        //console.log('FOCUS: ServiceType');
         onRefresh();
       });
     }, [navigation]);
-    console.log("selection", selection);
+    //console.log('selection', selection);
 
     const onRefresh = () => {
-      setSelection("");
-      console.log("onRefresh");
+      if (refreshing) return;
+      setSelection('');
+      setRefreshing(true);
+
       db.transaction(tx => {
-        let query = "SELECT * FROM service_types WHERE status=1 ORDER BY name";
-        console.log("QUERY: "+query);
-        tx.executeSql(query, null, (txObj, result) => {
-          console.log("RESULT: ", result);
-          setData(dbResultData(result));
-        });
+        let query = 'SELECT * FROM service_types WHERE status=1 ORDER BY name';
+        //console.log('QUERY: ' + query);
+        tx.executeSql(
+          query,
+          null,
+          (txObj, result) => {
+            //console.log('RESULT: ', result);
+            setData(dbResultData(result));
+            setRefreshing(false);
+          },
+          () => {
+            setRefreshing(false);
+          },
+        );
       });
-    }
+    };
 
     const onAccept = () => {
-      if(!selection) return;
-      if(!params?.screen) return;
+      if (!selection) return;
+      if (refreshing) return;
       const record = data.find(element => element.id == selection);
+
+      if (!params?.screen) {
+        setAutoservice({
+          filterTimelime: {
+            serviceType: {
+              id: record?.id,
+              name: record?.name,
+            },
+          },
+        });
+        navigation.goBack();
+        return;
+      }
 
       navigation.navigate({
         name: params?.screen,
         params: {serviceType: record},
-        merge: true
+        merge: true,
       });
-    }
+    };
 
-    const ListItems = data && data.map((row, index) => {
-      let color = "gray";
+    const RowItem = (row, index) => {
+      let color = colorize('muted');
       let backgroundColor = null;
-      let icon = "checkbox-blank-outline";
+      let icon = 'radiobox-blank';
 
-      if(selection === row.id){
-        color = "#3f51b5";
-        backgroundColor = "#fafafa";
-        icon = "checkbox-marked";
+      if (selection === row.id) {
+        color = colorize('dark');
+        backgroundColor = colorize('bg-light-default');
+        icon = 'radiobox-marked';
       }
 
       let description = [];
-      if(row.alert_km>0)
-        description.push(row.alert_km+" Km");
-      if(row.alert_time>0)
-        description.push(row.alert_time+" "+labelTimeType(row.alert_time_type));
+      if (row.alert_km > 0) description.push(row.alert_km + ' Km');
+      if (row.alert_time > 0)
+        description.push(
+          row.alert_time + ' ' + labelTimeType(row.alert_time_type),
+        );
 
       return (
-        <List.Item
-          key={row.id}
-          title={row.name}
-          description={description.join(" / ")}
+        <Pressable
+          android_ripple={{
+            color: colorize('pressable-warning'),
+            borderless: false,
+          }}
           onPress={() => setSelection(row.id)}
-          left={() => <List.Icon icon={icon} color={color} style={{marginLeft: 8}}/>}
-          titleStyle={{color: color}}
-          descriptionStyle={{color: color}}
-          style={{backgroundColor: backgroundColor, width: '100%', flex: 1}}
-        />
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingBottom: 0,
+            paddingTop: 0,
+            paddingLeft: 0,
+            paddingRight: 0,
+            marginBottom: 0,
+            backgroundColor: backgroundColor,
+            alignSelf: 'center',
+          }}>
+          <List.Item
+            key={row.id}
+            title={row.name}
+            description={description.join(' / ')}
+            left={() => (
+              <List.Icon icon={icon} color={color} style={{marginLeft: 15}} />
+            )}
+            titleStyle={{color: color}}
+            descriptionStyle={{color: color, fontSize: 12}}
+            style={{backgroundColor: backgroundColor, width: '100%', flex: 1}}
+          />
+        </Pressable>
       );
-    });
+    };
 
+    return (
+      <View style={{...uiStyle.container}}>
+        <FlatList
+          data={data}
+          renderItem={({item, index}) => RowItem(item, index)}
+          style={{...uiStyle.scrollView, width: '100%', paddingHorizontal: 0}}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListHeaderComponent={
+            <Text
+              style={{
+                fontSize: 16,
+                textAlign: 'center',
+                fontWeight: 600,
+                color: colorize('gray-700'),
+                paddingBottom: 10,
+                paddingTop: 20,
+              }}>
+              Service Types
+            </Text>
+          }
+          ListEmptyComponent={
+             data !== null && <View alignItems="center">
+              <Icon
+                name="eye-off"
+                color={colorize('muted')}
+                size={32}
+                style={{marginTop: 50}}
+              />
+              <Text style={{color: colorize('muted')}}>No result</Text>
+            </View> 
+          }
+          ListFooterComponent={<View style={{height: 60}}></View>}
+        />
+
+        <FAB
+          icon="check-bold"
+          color="white"
+          style={{
+            ...uiStyle.floatingFab,
+            backgroundColor: colorize('success'),
+          }}
+          onPress={onAccept}
+        />
+      </View>
+    );
+    /*
     return (
       <View style={uiStyle.container}>
         <ScrollView style={{...uiStyle.scrollView, width: '100%'}}>
           {me.header}
-          <List.Section style={uiStyle.defaultWidth}>
-            {ListItems}
-          </List.Section>
-          {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
+          <List.Section style={uiStyle.defaultWidth}>{ListItems}</List.Section>
+          {data && data.length === 0 && (
+            <Text variant="bodyLarge">No result</Text>
+          )}
         </ScrollView>
         <ActionBar
           onAccept={onAccept}
           onRefresh={onRefresh}
           disabledAccept={!selection}
-          />
+        />
       </View>
-    );
+    );*/
   },
 
-  Index: ({ navigation }) => {
+  Index: ({navigation}) => {
     const me = ServiceType;
     const [data, setData] = React.useState(null);
-    const [selection, setSelection] = React.useState("");
+    const [selection, setSelection] = React.useState('');
     const [visibleMsgBox, setVisibleMsgBox] = React.useState(false);
 
     React.useEffect(() => {
@@ -121,87 +242,91 @@ export const ServiceType = {
         onRefresh();
       });
     }, [navigation]);
-    console.log("selection", selection);
+    console.log('selection', selection);
 
     const onRefresh = () => {
-      setSelection("");
-      console.log("onRefresh");
+      setSelection('');
+      console.log('onRefresh');
       db.transaction(tx => {
-        let query = "SELECT * FROM service_types WHERE status=1 ORDER BY name";
-        console.log("QUERY: "+query);
+        let query = 'SELECT * FROM service_types WHERE status=1 ORDER BY name';
+        console.log('QUERY: ' + query);
         tx.executeSql(query, null, (txObj, result) => {
-          console.log("RESULT: ", result);
+          console.log('RESULT: ', result);
           setData(dbResultData(result));
         });
       });
-    }
+    };
 
     const onEdit = () => {
-      if(!selection) return;
+      if (!selection) return;
       const record = data.find(element => element.id == selection);
-      console.log("onEdit", record);
+      console.log('onEdit', record);
       navigation.navigate('ServiceType.Form', record);
-    }
+    };
 
     const onDelete = () => {
-      if(!selection) return;
-      console.log("onDelete",selection);
+      if (!selection) return;
+      console.log('onDelete', selection);
       setVisibleMsgBox(true);
-    }
+    };
 
     const onDeleteDone = () => {
-      if(!selection) return;
-      console.log("onDeleteDone",selection);
+      if (!selection) return;
+      console.log('onDeleteDone', selection);
 
       db.transaction(tx => {
-        let query = "UPDATE service_types SET status=0 WHERE id=?";
-        console.log("QUERY: "+query);
+        let query = 'UPDATE service_types SET status=0 WHERE id=?';
+        console.log('QUERY: ' + query);
         tx.executeSql(query, [selection], (txObj, result) => {});
 
         onRefresh();
       });
-    }
+    };
 
+    const ListItems =
+      data &&
+      data.map((row, index) => {
+        let color = 'gray';
+        let backgroundColor = null;
+        let icon = 'checkbox-blank-outline';
 
-    const ListItems = data && data.map((row, index) => {
-      let color = "gray";
-      let backgroundColor = null;
-      let icon = "checkbox-blank-outline";
+        if (selection === row.id) {
+          color = '#3f51b5';
+          backgroundColor = '#fafafa';
+          icon = 'checkbox-marked';
+        }
 
-      if(selection === row.id){
-        color = "#3f51b5";
-        backgroundColor = "#fafafa";
-        icon = "checkbox-marked";
-      }
+        let description = [];
+        if (row.alert_km > 0) description.push(row.alert_km + ' Km');
+        if (row.alert_time > 0)
+          description.push(
+            row.alert_time + ' ' + labelTimeType(row.alert_time_type),
+          );
 
-      let description = [];
-      if(row.alert_km>0)
-        description.push(row.alert_km+" Km");
-      if(row.alert_time>0)
-        description.push(row.alert_time+" "+labelTimeType(row.alert_time_type));
-
-      return (
-        <List.Item
-          key={row.id}
-          title={row.name}
-          description={description.join(" / ")}
-          onPress={() => setSelection(row.id)}
-          left={() => <List.Icon icon={icon} color={color} style={{marginLeft: 8}}/>}
-          titleStyle={{color: color}}
-          descriptionStyle={{color: color}}
-          style={{backgroundColor: backgroundColor, width: '100%', flex: 1}}
-        />
-      );
-    });
+        return (
+          <List.Item
+            key={row.id}
+            title={row.name}
+            description={description.join(' / ')}
+            onPress={() => setSelection(row.id)}
+            left={() => (
+              <List.Icon icon={icon} color={color} style={{marginLeft: 8}} />
+            )}
+            titleStyle={{color: color}}
+            descriptionStyle={{color: color}}
+            style={{backgroundColor: backgroundColor, width: '100%', flex: 1}}
+          />
+        );
+      });
 
     return (
       <View style={uiStyle.container}>
         <ScrollView style={{...uiStyle.scrollView, width: '100%'}}>
           {me.header}
-          <List.Section style={uiStyle.defaultWidth}>
-            {ListItems}
-          </List.Section>
-          {data && data.length===0 && <Text variant="bodyLarge">No result</Text>}
+          <List.Section style={uiStyle.defaultWidth}>{ListItems}</List.Section>
+          {data && data.length === 0 && (
+            <Text variant="bodyLarge">No result</Text>
+          )}
         </ScrollView>
         <ActionBar
           onAdd={() => navigation.navigate('ServiceType.Form')}
@@ -210,33 +335,52 @@ export const ServiceType = {
           onDelete={onDelete}
           disabledEdit={!selection}
           disabledDelete={!selection}
+        />
+        {visibleMsgBox && (
+          <MsgBox
+            visible={visibleMsgBox}
+            setVisible={setVisibleMsgBox}
+            title="Delete"
+            message="Do you want to do it?"
+            onDone={onDeleteDone}
           />
-        {visibleMsgBox && <MsgBox visible={visibleMsgBox} setVisible={setVisibleMsgBox} title="Delete" message="Do you want to do it?" onDone={onDeleteDone} />}
+        )}
       </View>
     );
   },
 
-  Form: ({ route, navigation }) => {
+  Form: ({route, navigation}) => {
     const me = ServiceType;
     const params = route.params;
-    const id = params && params.id ? params.id : "";
-    const [name, setName] = React.useState(params && params?.name ? params.name : "");
-    const [alertKm, setAlertKm] = React.useState(params && params?.alert_km ? String(params.alert_km) : "");
-    const [alertTime, setAlertTime] = React.useState(params && params?.alert_time ? String(params.alert_time) : "");
-    const [alertTimeType, setAlertTimeType] = React.useState(params && params?.alert_time_type ? params.alert_time_type : "D");
-    const [isSwitchOnAlertKm, setIsSwitchOnAlertKm] = React.useState(params && params?.alert_km > 0 ? true : false);
-    const [isSwitchOnAlertTime, setIsSwitchOnAlertTime] = React.useState(params && params?.alert_time > 0 ? true : false);
+    const id = params && params.id ? params.id : '';
+    const [name, setName] = React.useState(
+      params && params?.name ? params.name : '',
+    );
+    const [alertKm, setAlertKm] = React.useState(
+      params && params?.alert_km ? String(params.alert_km) : '',
+    );
+    const [alertTime, setAlertTime] = React.useState(
+      params && params?.alert_time ? String(params.alert_time) : '',
+    );
+    const [alertTimeType, setAlertTimeType] = React.useState(
+      params && params?.alert_time_type ? params.alert_time_type : 'D',
+    );
+    const [isSwitchOnAlertKm, setIsSwitchOnAlertKm] = React.useState(
+      params && params?.alert_km > 0 ? true : false,
+    );
+    const [isSwitchOnAlertTime, setIsSwitchOnAlertTime] = React.useState(
+      params && params?.alert_time > 0 ? true : false,
+    );
     const [nameEmpty, setNameEmpty] = React.useState(false);
 
-    let labelAlertTime="Time";
-    let labelAlertTimeType=labelTimeType(alertTimeType);
-    if(labelAlertTimeType)
-      labelAlertTime+=" ("+labelAlertTimeType+")";
+    let labelAlertTime = 'Time';
+    let labelAlertTimeType = labelTimeType(alertTimeType);
+    if (labelAlertTimeType) labelAlertTime += ' (' + labelAlertTimeType + ')';
 
     const onSave = () => {
-      console.log("onSave");
+      console.log('onSave');
 
-      if(!name.trim()){
+      if (!name.trim()) {
         setNameEmpty(true);
         return;
       }
@@ -244,20 +388,21 @@ export const ServiceType = {
       db.transaction(tx => {
         let query;
         let values;
-        if(id){
-          query="UPDATE service_types SET name=?, alert_km=?, alert_time=?, alert_time_type=? WHERE id=?";
-          values=[name, alertKm, alertTime, alertTimeType, id];
-        }
-        else{
-          query="INSERT INTO service_types(name,alert_km,alert_time,alert_time_type) VALUES(?,?,?,?)";
-          values=[name, alertKm, alertTime, alertTimeType];
+        if (id) {
+          query =
+            'UPDATE service_types SET name=?, alert_km=?, alert_time=?, alert_time_type=? WHERE id=?';
+          values = [name, alertKm, alertTime, alertTimeType, id];
+        } else {
+          query =
+            'INSERT INTO service_types(name,alert_km,alert_time,alert_time_type) VALUES(?,?,?,?)';
+          values = [name, alertKm, alertTime, alertTimeType];
         }
 
         tx.executeSql(query, values, (txObj, result) => {});
 
         navigation.goBack();
       });
-    }
+    };
 
     return (
       <ScrollView style={uiStyle.scrollView}>
@@ -266,47 +411,111 @@ export const ServiceType = {
           label="Name"
           value={name}
           error={nameEmpty}
-          onChangeText={value => {setName(value); setNameEmpty(!value ? true : false);}}
+          onChangeText={value => {
+            setName(value);
+            setNameEmpty(!value ? true : false);
+          }}
           style={uiStyle.defaultWidth}
         />
-        {nameEmpty && <HelperText type="error" style={uiStyle.defaultWidth}>
-          Field required!
-        </HelperText>}
+        {nameEmpty && (
+          <HelperText type="error" style={uiStyle.defaultWidth}>
+            Field required!
+          </HelperText>
+        )}
 
-        <Text style={{...uiStyle.defaultWidth, fontSize: 16, paddingLeft: 0, marginTop: 20, fontWeight: '500'}}>Alerts Interval</Text>
-        <View style={{...uiStyle.defaultWidth, flexDirection: 'row', alignItems: 'flex-end'}}>
-          <Switch value={isSwitchOnAlertKm} onValueChange={value => {setAlertKm(value?"0":""); setIsSwitchOnAlertKm(value)}} style={{marginRight: 10, marginBottom: 8}} />
+        <Text
+          style={{
+            ...uiStyle.defaultWidth,
+            fontSize: 16,
+            paddingLeft: 0,
+            marginTop: 20,
+            fontWeight: '500',
+          }}>
+          Alerts Interval
+        </Text>
+        <View
+          style={{
+            ...uiStyle.defaultWidth,
+            flexDirection: 'row',
+            alignItems: 'flex-end',
+          }}>
+          <Switch
+            value={isSwitchOnAlertKm}
+            onValueChange={value => {
+              setAlertKm(value ? '0' : '');
+              setIsSwitchOnAlertKm(value);
+            }}
+            style={{marginRight: 10, marginBottom: 8}}
+          />
           <TextInput
             label="Kilometers"
             value={alertKm}
             editable={isSwitchOnAlertKm}
-            onChangeText={value => {setAlertKm(value)}}
+            onChangeText={value => {
+              setAlertKm(value);
+            }}
             style={{flex: 1}}
-            keyboardType='numeric'
+            keyboardType="numeric"
           />
         </View>
 
-        <View style={{...uiStyle.defaultWidth, flexDirection: 'row', alignItems: 'flex-end'}}>
-          <Switch value={isSwitchOnAlertTime} onValueChange={value => {setAlertTime(value?"0":""); setIsSwitchOnAlertTime(value)}} style={{marginRight: 10, marginBottom: 8}} />
+        <View
+          style={{
+            ...uiStyle.defaultWidth,
+            flexDirection: 'row',
+            alignItems: 'flex-end',
+          }}>
+          <Switch
+            value={isSwitchOnAlertTime}
+            onValueChange={value => {
+              setAlertTime(value ? '0' : '');
+              setIsSwitchOnAlertTime(value);
+            }}
+            style={{marginRight: 10, marginBottom: 8}}
+          />
           <TextInput
             label={labelAlertTime}
             value={alertTime}
             editable={isSwitchOnAlertTime}
-            onChangeText={value => {setAlertTime(value)}}
+            onChangeText={value => {
+              setAlertTime(value);
+            }}
             style={{flex: 1}}
-            keyboardType='numeric'
+            keyboardType="numeric"
           />
         </View>
 
-        <View style={{...uiStyle.defaultWidth, flexDirection: 'row', alignItems: 'flex-end'}}>
+        <View
+          style={{
+            ...uiStyle.defaultWidth,
+            flexDirection: 'row',
+            alignItems: 'flex-end',
+          }}>
           <View style={{width: 150}}>
             <RadioButton.Group
               value={alertTimeType}
-              onValueChange={value => setAlertTimeType(value)}
-              >
-              <RadioButton.Item labelVariant="bodyMedium" value="D" disabled={!isSwitchOnAlertTime} style={{paddingBottom: 0}} label="Days" />
-              <RadioButton.Item labelVariant="bodyMedium" value="M" disabled={!isSwitchOnAlertTime} style={{paddingBottom: 0, paddingTop: 0}} label="Months" />
-              <RadioButton.Item labelVariant="bodyMedium" value="Y" disabled={!isSwitchOnAlertTime} style={{paddingBottom: 0, paddingTop: 0}} label="Years" />
+              onValueChange={value => setAlertTimeType(value)}>
+              <RadioButton.Item
+                labelVariant="bodyMedium"
+                value="D"
+                disabled={!isSwitchOnAlertTime}
+                style={{paddingBottom: 0}}
+                label="Days"
+              />
+              <RadioButton.Item
+                labelVariant="bodyMedium"
+                value="M"
+                disabled={!isSwitchOnAlertTime}
+                style={{paddingBottom: 0, paddingTop: 0}}
+                label="Months"
+              />
+              <RadioButton.Item
+                labelVariant="bodyMedium"
+                value="Y"
+                disabled={!isSwitchOnAlertTime}
+                style={{paddingBottom: 0, paddingTop: 0}}
+                label="Years"
+              />
             </RadioButton.Group>
           </View>
         </View>
@@ -331,5 +540,5 @@ export const ServiceType = {
         </View>
       </ScrollView>
     );
-  }
-}
+  },
+};

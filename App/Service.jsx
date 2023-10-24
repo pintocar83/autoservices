@@ -29,7 +29,7 @@ export const Service = {
   },
 
   Index: ({ route, navigation }) => {
-    console.log("INDE PARMS: ",route, navigation );
+    //console.log("INDE PARMS: ",route, navigation );
     const me = Service;
     const [data, setData] = React.useState(null);
     const [selection, setSelection] = React.useState([]);
@@ -60,7 +60,7 @@ export const Service = {
     },[]);
 
 
-    console.log("selection", selection);
+    //console.log("selection", selection);
 
     const onRefresh = () => {
       if(refreshing) return;

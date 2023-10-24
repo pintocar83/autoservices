@@ -22,6 +22,7 @@ export const colorize = (c) => {
     case "warning":              return "#ffc700";
     case "danger":               return "#f1416c";
     case "white":                return "#FFFFFF";
+    case "red":                  return "#ff0000";
     case "light":
     case "gray-100":             return "#f9f9f9";
     case "gray-200":             return "#f4f4f4";
@@ -130,7 +131,8 @@ export const uiStyle = StyleSheet.create({
 
   floatingFab: {
     position: "absolute",
-    backgroundColor: colorize("top-primary"),
+    //backgroundColor: colorize("top-primary"),
+    backgroundColor: colorize("primary"),
     bottom: 15,
     right: 15,
     borderRadius: 30
@@ -156,7 +158,7 @@ export const uiStyle = StyleSheet.create({
 
   container: {
     flex: 1,
-    alignItems: 'center',
+    //alignItems: 'stretch',
     justifyContent: 'flex-start',
     backgroundColor: '#FFFFFF',
     paddingTop: 0,
@@ -187,7 +189,8 @@ export const uiStyle = StyleSheet.create({
 
   defaultWidth: {
     width: '100%',
-    maxWidth: 500
+    maxWidth: 500,
+    ackgroundColor: '#FF0000'
   },
 
   w100: {
@@ -338,6 +341,50 @@ export const SvgDuotune = {
       </svg>
     `;
   },
+
+  CircleOutline: (color) => {
+    return `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22 12C22 17.5 17.5 22 12 22C6.5 22 2 17.5 2 12C2 6.5 6.5 2 12 2C17.5 2 22 6.5 22 12ZM12 6C8.7 6 6 8.7 6 12C6 15.3 8.7 18 12 18C15.3 18 18 15.3 18 12C18 8.7 15.3 6 12 6Z" fill="`+color+`"/>
+      </svg>
+    `;
+  },
+
+  Circle: (color) => {
+    return `
+      <svg xmlns="http://www.w3.org/2000/svg" width="24px" height="24px" viewBox="0 0 24 24" version="1.1">
+        <circle fill="`+color+`" cx="12" cy="12" r="8"/>
+      </svg>
+    `;
+  },
+
+  Health: (color, color_secundary) => {
+    return `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path opacity="0.3" d="M12.025 4.725C9.725 2.425 6.025 2.425 3.725 4.725C1.425 7.025 1.425 10.725 3.725 13.025L11.325 20.625C11.725 21.025 12.325 21.025 12.725 20.625L20.325 13.025C22.625 10.725 22.625 7.025 20.325 4.725C18.025 2.425 14.325 2.425 12.025 4.725Z" fill="`+(color_secundary ? color_secundary : color)+`"/>
+        <path d="M14.025 17.125H13.925C13.525 17.025 13.125 16.725 13.025 16.325L11.925 11.125L11.025 14.325C10.925 14.725 10.625 15.025 10.225 15.025C9.825 15.125 9.425 14.925 9.225 14.625L7.725 12.325L6.525 12.925C6.425 13.025 6.225 13.025 6.125 13.025H3.125C2.525 13.025 2.125 12.625 2.125 12.025C2.125 11.425 2.525 11.025 3.125 11.025H5.925L7.725 10.125C8.225 9.925 8.725 10.025 9.025 10.425L9.825 11.625L11.225 6.72498C11.325 6.32498 11.725 6.02502 12.225 6.02502C12.725 6.02502 13.025 6.32495 13.125 6.82495L14.525 13.025L15.225 11.525C15.425 11.225 15.725 10.925 16.125 10.925H21.125C21.725 10.925 22.125 11.325 22.125 11.925C22.125 12.525 21.725 12.925 21.125 12.925H16.725L15.025 16.325C14.725 16.925 14.425 17.125 14.025 17.125Z" fill="`+color+`"/>
+      </svg>
+    `;
+  },
+
+  Eraser: (color, color_secundary) => {
+    return `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path opacity="0.3" d="M8.38 22H21C21.2652 22 21.5196 21.8947 21.7071 21.7072C21.8946 21.5196 22 21.2652 22 21C22 20.7348 21.8946 20.4804 21.7071 20.2928C21.5196 20.1053 21.2652 20 21 20H10L8.38 22Z" fill="`+(color_secundary ? color_secundary : color)+`"/>
+        <path d="M15.622 15.6219L9.855 21.3879C9.66117 21.582 9.43101 21.7359 9.17766 21.8409C8.92431 21.946 8.65275 22 8.37849 22C8.10424 22 7.83268 21.946 7.57933 21.8409C7.32598 21.7359 7.09582 21.582 6.90199 21.3879L2.612 17.098C2.41797 16.9042 2.26404 16.674 2.15903 16.4207C2.05401 16.1673 1.99997 15.8957 1.99997 15.6215C1.99997 15.3472 2.05401 15.0757 2.15903 14.8224C2.26404 14.569 2.41797 14.3388 2.612 14.145L8.37801 8.37805L15.622 15.6219Z" fill="`+color+`"/>
+        <path opacity="0.3" d="M8.37801 8.37805L14.145 2.61206C14.3388 2.41803 14.569 2.26408 14.8223 2.15906C15.0757 2.05404 15.3473 2 15.6215 2C15.8958 2 16.1673 2.05404 16.4207 2.15906C16.674 2.26408 16.9042 2.41803 17.098 2.61206L21.388 6.90198C21.582 7.0958 21.736 7.326 21.841 7.57935C21.946 7.83269 22 8.10429 22 8.37854C22 8.65279 21.946 8.92426 21.841 9.17761C21.736 9.43096 21.582 9.66116 21.388 9.85498L15.622 15.6219L8.37801 8.37805Z" fill="`+(color_secundary ? color_secundary : color)+`"/>
+      </svg>
+    `;
+  },
+
+  Close: (color, color_secundary) => {
+    return `
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="9.39844" y="20.7144" width="16" height="2.66667" rx="1.33333" transform="rotate(-45 9.39844 20.7144)" fill="`+(color_secundary ? color_secundary : color)+`"/>
+        <rect x="11.2852" y="9.40039" width="16" height="2.66667" rx="1.33333" transform="rotate(45 11.2852 9.40039)" fill="`+color+`"/>
+      </svg>
+    `;
+  },
 };
 
 export const Badge = (props) => {
@@ -381,7 +428,7 @@ export const Card = (props) => {
       width: '100%',
       flex: 1,
       paddingTop: 20,
-      marginBottom: 65,
+      marginBottom: 5,
       ...props?.style
       }}>
       {/*HEADER*/}
@@ -396,15 +443,20 @@ export const Card = (props) => {
           <Text numberOfLines={1} ellipsizeMode="tail" style={{fontWeight: 'bold', fontSize: 15}}>{props?.title}</Text>
           <Text numberOfLines={1} ellipsizeMode="tail" style={{color: '#b5b5c3', fontSize: 12}}>{props?.description}</Text>
         </View>
-        <View>
-          {props?.onFind &&
-            <TouchableOpacity onPress={props?.onFind}>
-              <View style={{backgroundColor: colorize('bg-light-default'), borderRadius: 5, padding: 5}}>
-                <SvgXml xml={SvgDuotune.Find(colorize('dark'))} width="28" height="28" />
-              </View>
-            </TouchableOpacity>
-          }
-        </View>
+        {props?.onClear &&
+          <TouchableOpacity onPress={props?.onClear} style={{marginRight: 5,}}>
+            <View style={{backgroundColor: colorize('bg-light-danger'), borderRadius: 5, padding: 5}}>
+              <SvgXml xml={SvgDuotune.Close(colorize('danger'))} width="28" height="28" />
+            </View>
+          </TouchableOpacity>
+        }
+        {props?.onFind &&
+          <TouchableOpacity onPress={props?.onFind}>
+            <View style={{backgroundColor: colorize('bg-light-default'), borderRadius: 5, padding: 5}}>
+              <SvgXml xml={SvgDuotune.Find(colorize('dark'))} width="28" height="28" />
+            </View>
+          </TouchableOpacity>
+        }
       </View>
       {/*BODY*/}
       <View>
@@ -428,7 +480,9 @@ export const Divider = (props) => {
 }
 
 export const ButtonDescription = (props) => {
-
+  let disabled_style = {};
+  if(props.disabled)
+    disabled_style = {opacity: 0.8, backgroundColor: colorize("gray-500")}
   return (
     <Pressable
       android_ripple={{color: 'rgba(255, 255, 255, .2)', borderless: false}}
@@ -442,6 +496,7 @@ export const ButtonDescription = (props) => {
         alignItems: "center",
         borderRadius: 8,
         ...props.style,
+        ...disabled_style
       }}
       >
       { props.icon && <View style={{marginRight: 12}}>{props.icon({ color: props.color, size: 32 })}</View> }

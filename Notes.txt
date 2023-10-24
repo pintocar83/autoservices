@@ -6,6 +6,7 @@ cd android
 gradlew clean
 
 -Build APK Release (https://medium.com/geekculture/react-native-generate-apk-debug-and-release-apk-4e9981a2ea51)
+ Solo fue requerido la primera vez
 keytool -genkey -v -keystore autoservices.keystore -alias AutoServices -keyalg RSA -keysize 2048 -validity 10000
 
 cd android
@@ -16,6 +17,10 @@ android\app\build\outputs\apk\release\app-release.apk
 
 -Send file to device
 adb -s emulator-5554 push autoservices_restore.json  /storage/emulated/0/Download/
+
+-Get file from device
+adb root
+adb -s emulator-5554 pull /data/data/com.autoservice/databases/autoservices-v5.sqlite autoservices-backup.sqlite
 
 -Shell device
 adb -s emulator-5554 shell
@@ -31,7 +36,7 @@ npx react-native run-android --list-devices
 npx react-native run-android
 
 
-Correcion y Cambios Pendientes
+Correccion y Cambios Pendientes
 ==============================
 
 Automobiles - Screen
@@ -59,3 +64,57 @@ Otros
 =====
 [ ] Respaldar / Restaurar BD
 [ ] Buscar otra alternativa para el calendario (muy lento)
+
+
+
+Secuencia re-apertura del app
+=================================================
+cd c:\ReactJS\AutoService
+cd android
+gradlew clean
+npx react-native run-android --list-devices
+
+npx react-native start --reset-cache
+
+Desistalar un paquete
+======================
+1) npx react-native unlink <Module Name>
+2) npm unlink <Module Name>
+3) npm uninstall --save <Module name
+
+
+
+
+
+Reducir tamaño del APK
+================================================
+Remove unwanted Codes and unused Packages.
+inside the app/build.gradle
+Set values into true
+
+def enableProguardInReleaseBuilds = true
+def enableSeparateBuildPerCPUArchitecture = true
+
+
+And
+
+buildTypes {
+    release {
+        debuggable false
+        minifyEnabled true
+        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+    }
+}
+use this command to build
+
+gradlew bundleRelease
+
+
+
+Font MaterialCommunityIcons
+=====================================================
+https://static.enapter.com/rn/icons/material-community.html
+
+Generar Icono del APP online
+============================
+https://romannurik.github.io/AndroidAssetStudio/icons-launcher.html
