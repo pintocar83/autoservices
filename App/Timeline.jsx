@@ -60,7 +60,7 @@ export const Timeline = {
   },
 
   Index: ({route, navigation}) => {
-    console.log('Timeline->Index->route', route);
+    //console.log('Timeline->Index->route', route);
     //console.log('Timeline->Index->navigation', navigation);
     const me = Timeline;
     const params = route.params;
@@ -89,26 +89,12 @@ export const Timeline = {
     React.useEffect(() => {
       onRefresh();
     }, [autoservice.filterTimelime]);
-    /*
-    React.useEffect(() => {
-      const new_filter = {
-        serviceType: {
-          id: params?.serviceType?.id,
-          name: params?.serviceType?.name,
-        },
-      };
-      setFilter({...filter, ...new_filter});
-      onRefresh();
-    }, [params?.serviceType]);
-*/
+
     const onRefresh = () => {
       if (refreshing) return;
       if (!autoservice.automobile?.id) return;
       //console.log("Timeline->Index->onRefresh->autoservice.automobile",autoservice.automobile);
-      console.log(
-        'Timeline->Index->onRefresh->filter',
-        autoservice.filterTimelime,
-      );
+      //console.log('Timeline->Index->onRefresh->filter',autoservice.filterTimelime);
       setSelection([]);
       setRefreshing(true);
 
@@ -122,12 +108,11 @@ export const Timeline = {
         ];
         if (filtering && autoservice.filterTimelime?.serviceType?.id) {
           //console.log("Timeline->Index->onRefresh->filtering?", filter.serviceType?.id);
-          query_where += 'service_type_id = ? AND ';
+          query_where += ' AND service_type_id = ?';
           query_values.push(autoservice.filterTimelime?.serviceType?.id);
         }
 
-        let query =
-          `
+        let query = `
           SELECT
             date,
             km,
@@ -153,24 +138,27 @@ export const Timeline = {
             WHERE
               K.automobile_id = ?
           )
-          WHERE
-            ` +
-          query_where +
-          `
-            TRUE
+          WHERE 1 ${query_where}
           GROUP BY
             date,
             km
           ORDER BY
             date DESC
         `;
+
         //console.log('QUERY: ' + query);
         tx.executeSql(
           query,
           query_values,
           (txObj, result) => {
             //console.log('RESULT: ', result);
-            setData([{date: moment().format('YYYY-MM-DD HH:mm:ss'), km: autoservice.automobile?.km}, ...dbResultData(result)]);
+            setData([
+              {
+                date: moment().format('YYYY-MM-DD HH:mm:ss'),
+                km: autoservice.automobile?.km,
+              },
+              ...dbResultData(result),
+            ]);
             setRefreshing(false);
           },
           () => {
@@ -278,7 +266,7 @@ export const Timeline = {
                   color: colorize('primary'),
                   textAlign: 'right',
                 }}>
-                { row.km === next?.km ? '' : me.formatKm(row.km) + ' km'}
+                {row.km === next?.km ? '' : me.formatKm(row.km) + ' km'}
               </Text>
               {!last_item && (
                 <Text
@@ -343,7 +331,9 @@ export const Timeline = {
                   paddingLeft: 20,
                   flex: 0,
                 }}>
-                { first_item ? 'Today' :moment(row.date).format('DD/MM/YYYY hh:mma')}
+                {first_item
+                  ? 'Today'
+                  : moment(row.date).format('DD/MM/YYYY hh:mma')}
               </Text>
               {!last_item && (
                 <Text

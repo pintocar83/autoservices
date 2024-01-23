@@ -499,16 +499,16 @@ const MainScreen = (props) => {
       <Stack.Screen name="TabScreen" component={TabScreen} />
       <Stack.Screen name="Status.Index" component={Status.Index} />
       <Stack.Screen name="Timeline.Index" component={Timeline.Index} />
-      <Stack.Screen name="Kilometer.Index" component={Kilometer.Index} options={{subtitle: 'Kilometers', icon: 'gauge'}} />
-      <Stack.Screen name="Kilometer.Form" component={Kilometer.Form} options={{subtitle: 'Kilometers', icon: 'gauge'}} />
-      <Stack.Screen name="Automobile.Index" component={Automobile.Index} />
+      <Stack.Screen name="Kilometer.Index" component={Kilometer.Index} />
+      <Stack.Screen name="Kilometer.Form" component={Kilometer.Form} />
       <Stack.Screen name="Automobile.List" component={Automobile.List} />
+      <Stack.Screen name="Automobile.Index" component={Automobile.Index} />
       <Stack.Screen name="Automobile.Form" component={Automobile.Form} />
       <Stack.Screen name="ServiceType.Index" component={ServiceType.Index} />
       <Stack.Screen name="ServiceType.List" component={ServiceType.List} />
       <Stack.Screen name="ServiceType.Form" component={ServiceType.Form} />
-      <Stack.Screen name="Service.Index" component={Service.Index} options={{subtitle: 'Services', icon: 'car-wrench'}} />
-      <Stack.Screen name="Service.Form" component={Service.Form} options={{subtitle: 'Services', icon: 'car-wrench'}} />
+      <Stack.Screen name="Service.Index" component={Service.Index} />
+      <Stack.Screen name="Service.Form" component={Service.Form} />
       <Stack.Screen name="CameraScreen.Index" component={CameraScreen.Index} />
       <Stack.Screen name="KilometerScanCam" component={KilometerScanCam} />
     </Stack.Navigator>

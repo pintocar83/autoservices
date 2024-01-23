@@ -211,7 +211,7 @@ export const Kilometer = {
           } else {
             currentSelection.push(id);
           }
-          return [...currentSelection];
+          return [...new Set(currentSelection)];
         });
       } else {
         if (selection.length === 1 && selection[0] === id) {
@@ -224,7 +224,7 @@ export const Kilometer = {
 
     const onMultiSelection = id => {
       if (!multiSelection) {
-        setSelection([...selection, id]);
+        setSelection([...new Set([...selection, id])]);
         setMultiSelection(true);
       } else if (multiSelection) {
         setSelection([id]);

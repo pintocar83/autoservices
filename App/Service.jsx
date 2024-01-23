@@ -130,7 +130,7 @@ export const Service = {
           else {
             currentSelection.push(id);
           }
-          return [...currentSelection];
+          return [...new Set(currentSelection)];
         });
       }
       else {
@@ -145,7 +145,7 @@ export const Service = {
 
     const onMultiSelection = (id) => {
       if(!multiSelection){
-        setSelection([...selection, id]);
+        setSelection([...new Set([...selection, id])]);
         setMultiSelection(true);
       }
       else if(multiSelection){

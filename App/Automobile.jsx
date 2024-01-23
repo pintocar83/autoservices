@@ -39,7 +39,7 @@ import {
 } from './uiComponent';
 import {useAutoServiceState} from './hooks';
 
-export const Automobile = {
+const Module = {
   getCurrentKm: (id, callback) => {
     db.transaction(tx => {
       let query = `
@@ -57,10 +57,10 @@ export const Automobile = {
     });
   },
 
-  header: <Text style={uiStyle.indexHeader}>Automobiles</Text>,
+  title: 'Automobiles',
 
   List: ({route, navigation}) => {
-    const me = Automobile;
+    const me = Module;
     const params = route.params;
     const [data, setData] = React.useState(null);
     const [selection, setSelection] = React.useState('');
@@ -84,7 +84,7 @@ export const Automobile = {
 
       db.transaction(tx => {
         let query = `
-          SELECT 
+          SELECT
             A.*,
             K.value km,
             K.register_date km_date
@@ -205,19 +205,7 @@ export const Automobile = {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
-          ListHeaderComponent={
-            <Text
-              style={{
-                fontSize: 16,
-                textAlign: 'center',
-                fontWeight: 600,
-                color: colorize('gray-700'),
-                paddingBottom: 10,
-                paddingTop: 20,
-              }}>
-              Automobiles
-            </Text>
-          }
+          ListHeaderComponent={<DSP.HeaderTitle>{me.title}</DSP.HeaderTitle>}
           ListEmptyComponent={
             data !== null && (
               <View alignItems="center">
@@ -248,9 +236,11 @@ export const Automobile = {
   },
 
   Index: ({navigation}) => {
-    const me = Automobile;
+    const me = Module;
     const [data, setData] = React.useState(null);
-    const [selection, setSelection] = React.useState('');
+    const [selection, setSelection] = React.useState([]);
+    const [multiSelection, setMultiSelection] = React.useState(false);
+    const [refreshing, setRefreshing] = React.useState(false);
     const [visibleMsgBox, setVisibleMsgBox] = React.useState(false);
 
     React.useEffect(() => {
@@ -259,127 +249,250 @@ export const Automobile = {
         onRefresh();
       });
     }, [navigation]);
-    //console.log('selection', selection);
+    console.log('Automobile->Index->selection', selection);
 
     const onRefresh = () => {
-      setSelection('');
-      console.log('onRefresh');
+      if (refreshing) return;
+      setSelection([]);
+      setRefreshing(true);
+
       db.transaction(tx => {
         let query =
           'SELECT * FROM automobiles WHERE status=1 ORDER BY favorite DESC, code, name';
-        console.log('QUERY: ' + query);
-        tx.executeSql(query, null, (txObj, result) => {
-          console.log('RESULT: ', result);
-          setData(dbResultData(result));
-        });
+        //console.log('QUERY: ' + query);
+        tx.executeSql(
+          query,
+          null,
+          (txObj, result) => {
+            //console.log('RESULT: ', result);
+            setData(dbResultData(result));
+            setRefreshing(false);
+          },
+          () => {
+            setRefreshing(false);
+          },
+        );
       });
     };
 
     const onEdit = () => {
-      if (!selection) return;
-      const record = data.find(element => element.id == selection);
-      console.log('onEdit', record);
+      if (selection.length !== 1) return false;
+      const record = data.find(element => element.id == selection[0]);
       navigation.navigate('Automobile.Form', record);
     };
 
     const onDelete = () => {
-      if (!selection) return;
-      console.log('onDelete', selection);
+      if (selection.length === 0) return false;
       setVisibleMsgBox(true);
     };
 
     const onDeleteDone = () => {
-      if (!selection) return;
-      const index = data.findIndex(element => element.id == selection);
-      console.log('onDeleteDone', selection);
+      if (selection.length === 0) return false;
 
       db.transaction(tx => {
-        let query = 'UPDATE automobiles SET status=0 WHERE id=?';
-        console.log('QUERY: ' + query);
-        tx.executeSql(query, [selection], (txObj, result) => {});
-        if (data[index].favorite && data.length > 1) {
-          let query = 'UPDATE automobiles SET favorite=1 WHERE id = ?';
-          let next_id = data[index + 1].id;
-          tx.executeSql(query, [next_id], (txObj, result) => {});
-        }
-
-        onRefresh();
+        let query = 'UPDATE automobiles SET status=0 WHERE id IN (?)';
+        tx.executeSql(query, [selection.join(',')], (txObj, result) => {
+          let query =
+            'UPDATE automobiles SET favorite=1 WHERE id = (select id from automobiles where status=1 order by favorite desc, code, name limit 1)';
+          tx.executeSql(
+            query,
+            null,
+            (txObj, result) => {
+              onRefresh();
+            },
+            () => {
+              onRefresh();
+            },
+          );
+        });
       });
     };
 
+    const onSelection = id => {
+      if (multiSelection) {
+        setSelection(currentSelection => {
+          const index = currentSelection.indexOf(id);
+          if (index >= 0) {
+            currentSelection.splice(index, 1);
+          } else {
+            currentSelection.push(id);
+          }
+          return [...new Set(currentSelection)];
+        });
+      } else {
+        if (selection.length === 1 && selection[0] === id) {
+          setSelection([]);
+        } else {
+          setSelection([id]);
+        }
+      }
+    };
+
+    const onMultiSelection = id => {
+      if (!multiSelection) {
+        setSelection([...new Set([...selection, id])]);
+        setMultiSelection(true);
+      } else if (multiSelection) {
+        setSelection([id]);
+        setMultiSelection(false);
+      }
+    };
+
     const onFavorite = () => {
-      if (!selection) return;
-      console.log('onFavorite', selection);
+      if (selection.length !== 1) return false;
       db.transaction(tx => {
         let query =
           'UPDATE automobiles SET favorite=(CASE WHEN id=? THEN 1 ELSE 0 END)';
-        console.log('QUERY: ' + query);
-        tx.executeSql(query, [selection], (txObj, result) => {
+        //console.log('QUERY: ' + query);
+        tx.executeSql(query, [selection[0]], (txObj, result) => {
           onRefresh();
         });
       });
     };
 
     const isFavorite = () => {
-      if (!selection) return false;
-      const record = data.find(element => element.id == selection);
+      if (selection.length !== 1) return false;
+      const record = data.find(element => element.id == selection[0]);
       return record.favorite ? true : false;
     };
 
-    const ListItems =
-      data &&
-      data.map((row, index) => {
-        let color = 'gray';
-        let backgroundColor = null;
-        let icon = 'checkbox-blank-outline';
+    const onAdd = () => {
+      navigation.navigate('Automobile.Form');
+    };
 
-        if (selection === row.id) {
-          color = '#3f51b5';
-          backgroundColor = '#fafafa';
-          icon = 'checkbox-marked';
-        }
+    const RowItem = (row, index) => {
+      let color = colorize('muted');
+      let backgroundColor = null;
+      let icon = multiSelection ? 'checkbox-blank-outline' : 'radiobox-blank';
 
-        let rightIcon = null;
-        if (row.favorite)
-          rightIcon = () => <List.Icon icon="star" color="#ffeb3b" />;
-        else rightIcon = () => <List.Icon icon="star" color="#eeeeee" />;
+      if (selection.includes(row.id)) {
+        selected = true;
+        color = colorize('dark');
+        backgroundColor = colorize('bg-light-default');
+        icon = multiSelection ? 'checkbox-marked' : 'radiobox-marked';
+      }
 
-        return (
+      let rightIcon = null;
+      if (row.favorite)
+        rightIcon = () => <List.Icon icon="star" color={colorize('warning')} />;
+      else
+        rightIcon = () => (
+          <List.Icon icon="star" color={colorize('gray-300')} />
+        );
+
+      return (
+        <Pressable
+          android_ripple={{
+            color: colorize('pressable-warning'),
+            borderless: false,
+          }}
+          onPress={() => onSelection(row.id)}
+          onLongPress={() => onMultiSelection(row.id)}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingBottom: 0,
+            paddingTop: 0,
+            paddingLeft: 0,
+            paddingRight: 0,
+            marginBottom: 0,
+            backgroundColor: backgroundColor,
+            alignSelf: 'center',
+          }}>
           <List.Item
             key={row.id}
             title={row.code}
             description={row.name}
-            onPress={() => setSelection(row.id)}
             left={() => (
-              <List.Icon icon={icon} color={color} style={{marginLeft: 8}} />
+              <List.Icon icon={icon} color={color} style={{marginLeft: 15}} />
             )}
             right={rightIcon}
             titleStyle={{color: color}}
             descriptionStyle={{color: color}}
             style={{backgroundColor: backgroundColor, width: '100%', flex: 1}}
           />
-        );
-      });
+        </Pressable>
+      );
+    };
 
     return (
-      <View style={uiStyle.container}>
-        <ScrollView style={{...uiStyle.scrollView, width: '100%'}}>
-          {me.header}
-          <List.Section style={uiStyle.defaultWidth}>{ListItems}</List.Section>
-          {data && data.length === 0 && (
-            <Text variant="bodyLarge">No result</Text>
-          )}
-        </ScrollView>
-        <ActionBar
-          onAdd={() => navigation.navigate('Automobile.Form')}
-          onRefresh={onRefresh}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onFavorite={onFavorite}
-          disabledEdit={!selection}
-          disabledDelete={!selection}
-          disabledFavorite={!selection || isFavorite()}
+      <View style={{...uiStyle.container}}>
+        <FlatList
+          data={data}
+          renderItem={({item, index}) => RowItem(item, index)}
+          style={{...uiStyle.scrollView, width: '100%', paddingHorizontal: 0}}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListHeaderComponent={<DSP.HeaderTitle>{me.title}</DSP.HeaderTitle>}
+          ListEmptyComponent={
+            data !== null && (
+              <View alignItems="center">
+                <Icon
+                  name="eye-off"
+                  color={colorize('muted')}
+                  size={32}
+                  style={{marginTop: 50}}
+                />
+                <Text style={{color: colorize('muted')}}>No result</Text>
+              </View>
+            )
+          }
+          ListFooterComponent={<View style={{height: 60}}></View>}
         />
+
+        {selection.length >= 1 && (
+          <FAB
+            icon="delete"
+            color="white"
+            size="small"
+            style={{
+              ...uiStyle.floatingLeftFab,
+              backgroundColor: colorize('danger'),
+            }}
+            onPress={onDelete}
+          />
+        )}
+
+        {selection.length === 1 && !isFavorite() && (
+          <FAB
+            icon="star"
+            color={colorize("white")}
+            size="small"
+            style={{
+              position: 'absolute',
+              bottom: 85,
+              right: 23,
+              borderRadius: 30,
+              backgroundColor: colorize('primary'),
+              //left: uiStyle.floatingLeftFab.left + 50,
+            }}
+            onPress={onFavorite}
+          />
+        )}
+
+        {selection.length !== 1 && (
+          <FAB
+            icon="plus-thick"
+            color="white"
+            style={{
+              ...uiStyle.floatingFab,
+              backgroundColor: colorize('primary'),
+            }}
+            onPress={onAdd}
+          />
+        )}
+
+        {selection.length === 1 && (
+          <FAB
+            icon="pencil"
+            color="white"
+            style={{
+              ...uiStyle.floatingFab,
+            }}
+            onPress={onEdit}
+          />
+        )}
         {visibleMsgBox && (
           <MsgBox
             visible={visibleMsgBox}
@@ -394,7 +507,7 @@ export const Automobile = {
   },
 
   Form: ({route, navigation}) => {
-    const me = Automobile;
+    const me = Module;
     const params = route.params;
     const id = params && params.id ? params.id : '';
     const [code, setCode] = React.useState(
@@ -442,48 +555,46 @@ export const Automobile = {
     };
 
     return (
-      <ScrollView style={uiStyle.scrollView}>
-        {me.header}
-        <TextInput
-          label="Number"
-          value={code}
-          error={codeEmpty}
-          onChangeText={value => {
-            setCode(value);
-            setCodeEmpty(!value ? true : false);
+      <View style={{...StyleSheet.absoluteFill, backgroundColor: '#FFF'}}>
+        <ScrollView contentContainerStyle={uiStyle.formContainer}>
+          <DSP.HeaderTitle>{me.title}</DSP.HeaderTitle>
+          <TextInput
+            label="Number"
+            value={code}
+            error={codeEmpty}
+            onChangeText={value => {
+              setCode(value);
+              setCodeEmpty(!value ? true : false);
+            }}
+            style={uiStyle.defaultWidth}
+          />
+          {codeEmpty && (
+            <HelperText type="error" style={uiStyle.defaultWidth}>
+              Number field is required!
+            </HelperText>
+          )}
+          <TextInput
+            label="Name"
+            value={name}
+            onChangeText={value => setName(value)}
+            style={uiStyle.defaultWidth}
+          />
+        </ScrollView>
+        <FAB
+          icon="check-bold"
+          color="white"
+          style={{
+            position: 'absolute',
+            bottom: 15,
+            right: 15,
+            backgroundColor: colorize('success'),
+            borderRadius: 30,
           }}
-          style={uiStyle.defaultWidth}
+          onPress={onSave}
         />
-        {codeEmpty && (
-          <HelperText type="error" style={uiStyle.defaultWidth}>
-            Number field is required!
-          </HelperText>
-        )}
-        <TextInput
-          label="Name"
-          value={name}
-          onChangeText={value => setName(value)}
-          style={uiStyle.defaultWidth}
-        />
-        <View style={uiStyle.buttonContainer}>
-          <Button
-            mode="contained"
-            title="Cancel"
-            style={uiStyle.buttonActionForm}
-            contentStyle={uiStyle.buttonActionForm}
-            onPress={() => navigation.goBack()}
-          />
-          <View style={{width: 20}} />
-          <Button
-            mode="contained"
-            title="Done"
-            style={uiStyle.buttonActionForm}
-            contentStyle={uiStyle.buttonActionForm}
-            labelStyle={uiStyle.buttonActionForm}
-            onPress={onSave}
-          />
-        </View>
-      </ScrollView>
+      </View>
     );
   },
 };
+
+export const Automobile = Module;
